@@ -51,6 +51,12 @@ class BudgetBar extends StatelessWidget {
     final remaining = availableBudget - totalSpent;
     final isOverBudget = remaining < 0;
     final actualSavings = max(savingsGoal - overflowIntoSavings, 0.0);
+    final trulyOverdrawn = totalSpent > disposableIncome;
+    final double moneyRemaining = remaining >= 0
+        ? remaining
+        : trulyOverdrawn
+            ? disposableIncome - totalSpent
+            : 0.0;
 
     final daysToGo = daysInMonth - dayOfMonth;
     final dayProgress = (dayOfMonth / daysInMonth).clamp(0.0, 1.0);
@@ -134,75 +140,63 @@ class BudgetBar extends StatelessWidget {
             amountColor: _BarColors.spent,
           ),
           const SizedBox(height: 4),
-          // Money remaining:
-          //   - Positive while within spending budget
-          //   - £0 while eating into savings
-          //   - Negative only after savings fully gone (truly overdrawn)
-          ..() {
-            final trulyOverdrawn = totalSpent > disposableIncome;
-            final double moneyRemaining = remaining >= 0
-                ? remaining
-                : trulyOverdrawn
-                    ? disposableIncome - totalSpent // negative
-                    : 0.0;
-            return [
-              _KeyRow(
-                color: _BarColors.remaining,
-                label: 'Money remaining',
-                amount: formatAmount(moneyRemaining),
-                amountColor: _BarColors.remaining,
+          _KeyRow(
+            color: _BarColors.remaining,
+            label: 'Money remaining',
+            amount: formatAmount(moneyRemaining),
+            amountColor: _BarColors.remaining,
+          ),
+
+          // Summary line
+          const SizedBox(height: 10),
+          if (!isOverBudget)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: BoxDecoration(
+                color: _BarColors.remaining.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
               ),
-              const SizedBox(height: 10),
-              if (!isOverBudget)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: _BarColors.remaining.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'You have ${formatAmount(remaining)} left',
-                    style: AppTextStyles.caption.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: _BarColors.remaining,
-                    ),
-                  ),
-                )
-              else if (!trulyOverdrawn)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: _BarColors.spent.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    "You didn't meet your savings goal",
-                    style: AppTextStyles.caption.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: _BarColors.spent,
-                    ),
-                  ),
-                )
-              else
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: _BarColors.spent.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    "You didn't meet your goal and you are overspent by ${formatAmount(totalSpent - disposableIncome)}",
-                    style: AppTextStyles.caption.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: _BarColors.spent,
-                    ),
-                  ),
+              child: Text(
+                'You have ${formatAmount(remaining)} left',
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: _BarColors.remaining,
                 ),
-            ];
-          }(),
+              ),
+            )
+          else if (!trulyOverdrawn)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: BoxDecoration(
+                color: _BarColors.spent.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                "You didn't meet your savings goal",
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: _BarColors.spent,
+                ),
+              ),
+            )
+          else
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: BoxDecoration(
+                color: _BarColors.spent.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                "You didn't meet your goal and you are overspent by ${formatAmount(totalSpent - disposableIncome)}",
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: _BarColors.spent,
+                ),
+              ),
+            ),
 
           // Day-of-month progress
           const SizedBox(height: 14),
