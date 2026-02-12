@@ -8,6 +8,10 @@ All notable changes to the Kakeibo app will be documented in this file.
 - Income and Fixed Costs breakdown now displayed at top of main page
 - Conditional summary messages based on savings goal and spending status
 - Better handling of £0 and negative amounts in budget bar labels
+- Intelligent narrative summary on Monthly Reflection page that adapts based on:
+  - Income and fixed costs breakdown
+  - Whether a savings goal was set
+  - Spending outcome (met goal, partial savings, or overspent)
 
 ### Changed
 - Fixed Costs now displayed in red for better visibility

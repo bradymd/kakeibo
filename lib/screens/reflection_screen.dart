@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -82,9 +83,147 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
           _initFromMonth(currentMonth);
           final isCompleted = currentMonth.reflection.completed;
 
+          final disposableIncome = ref.watch(disposableIncomeProvider);
+          final availableBudget = ref.watch(availableBudgetProvider);
+          final remaining = ref.watch(remainingProvider);
+          final fixedCostsTotal = ref.watch(fixedExpensesTotalProvider);
+
+          // Calculate what they could have saved
+          final potentialSavings = (remaining >= 0 ? currentMonth.savingsGoal : max(0.0, currentMonth.savingsGoal + remaining)).toDouble();
+
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              // Month summary narrative
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.vividPurple.withValues(alpha: 0.1), AppColors.softBlue],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.vividPurple.withValues(alpha: 0.2), width: 2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Your Month in Review', style: AppTextStyles.heading),
+                    const SizedBox(height: 16),
+
+                    // Income
+                    RichText(
+                      text: TextSpan(
+                        style: AppTextStyles.body,
+                        children: [
+                          const TextSpan(text: 'This month you had an income of '),
+                          TextSpan(
+                            text: fmt(currentMonth.income),
+                            style: AppTextStyles.bodyBold.copyWith(color: AppColors.success),
+                          ),
+                          const TextSpan(text: '.'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Fixed costs
+                    if (fixedCostsTotal > 0) ...[
+                      RichText(
+                        text: TextSpan(
+                          style: AppTextStyles.body,
+                          children: [
+                            const TextSpan(text: 'Your fixed costs were '),
+                            TextSpan(
+                              text: fmt(fixedCostsTotal),
+                              style: AppTextStyles.bodyBold.copyWith(color: Colors.red),
+                            ),
+                            const TextSpan(text: ', leaving you '),
+                            TextSpan(
+                              text: fmt(disposableIncome),
+                              style: AppTextStyles.bodyBold,
+                            ),
+                            const TextSpan(text: ' to budget.'),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+
+                    // Savings goal
+                    if (currentMonth.savingsGoal > 0) ...[
+                      RichText(
+                        text: TextSpan(
+                          style: AppTextStyles.body,
+                          children: [
+                            const TextSpan(text: 'You set a savings goal of '),
+                            TextSpan(
+                              text: fmt(currentMonth.savingsGoal),
+                              style: AppTextStyles.bodyBold.copyWith(color: AppColors.vividPurple),
+                            ),
+                            const TextSpan(text: '.'),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ] else ...[
+                      const Text('You didn\'t set a savings goal.'),
+                      const SizedBox(height: 8),
+                    ],
+
+                    // Spending outcome
+                    RichText(
+                      text: TextSpan(
+                        style: AppTextStyles.body,
+                        children: [
+                          if (remaining >= 0) ...[
+                            if (currentMonth.savingsGoal > 0) ...[
+                              const TextSpan(text: 'You met your savings goal and had '),
+                              TextSpan(
+                                text: fmt(remaining),
+                                style: AppTextStyles.bodyBold.copyWith(color: AppColors.success),
+                              ),
+                              const TextSpan(text: ' remaining.'),
+                            ] else ...[
+                              const TextSpan(text: 'You had '),
+                              TextSpan(
+                                text: fmt(remaining),
+                                style: AppTextStyles.bodyBold.copyWith(color: AppColors.success),
+                              ),
+                              const TextSpan(text: ' left to spend or save.'),
+                            ],
+                          ] else ...[
+                            if (potentialSavings > 0) ...[
+                              const TextSpan(text: 'You managed to save '),
+                              TextSpan(
+                                text: fmt(potentialSavings),
+                                style: AppTextStyles.bodyBold.copyWith(color: AppColors.hotPink),
+                              ),
+                              const TextSpan(text: ' of your '),
+                              TextSpan(
+                                text: fmt(currentMonth.savingsGoal),
+                                style: AppTextStyles.bodyBold,
+                              ),
+                              const TextSpan(text: ' savings goal.'),
+                            ] else ...[
+                              const TextSpan(text: 'You overspent by '),
+                              TextSpan(
+                                text: fmt(-remaining),
+                                style: AppTextStyles.bodyBold.copyWith(color: Colors.red),
+                              ),
+                              if (currentMonth.savingsGoal > 0)
+                                const TextSpan(text: ', including your savings goal.'),
+                            ],
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
               // Spending breakdown
               Container(
                 padding: const EdgeInsets.all(16),
