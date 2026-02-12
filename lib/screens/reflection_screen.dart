@@ -128,7 +128,7 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
                         // Icon - pig if savings goal met, wolf if not
                         Image.asset(
                           showPig ? 'assets/images/pig.png' : 'assets/images/wolf.png',
-                          height: 80,
+                          height: 140,
                           fit: BoxFit.contain,
                         ),
                       ],
