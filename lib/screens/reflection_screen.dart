@@ -112,16 +112,27 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Icon - pig if savings goal met, wolf if not
-                    Center(
-                      child: Image.asset(
-                        showPig ? 'assets/images/pig.png' : 'assets/images/wolf.png',
-                        height: 120,
-                        fit: BoxFit.contain,
-                      ),
+                    // Header with icon on the right
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Your Month in Review', style: AppTextStyles.heading),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Icon - pig if savings goal met, wolf if not
+                        Image.asset(
+                          showPig ? 'assets/images/pig.png' : 'assets/images/wolf.png',
+                          height: 80,
+                          fit: BoxFit.contain,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    Text('Your Month in Review', style: AppTextStyles.heading),
                     const SizedBox(height: 16),
 
                     // Income
