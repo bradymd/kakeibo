@@ -38,23 +38,25 @@ class BudgetBar extends StatelessWidget {
   Widget build(BuildContext context) {
     if (disposableIncome <= 0) return const SizedBox.shrink();
 
-    final savingsRatio = (savingsGoal / disposableIncome).clamp(0.0, 1.0);
-    final availableRatio = 1.0 - savingsRatio;
+    // Calculate overflow into savings
+    final overflowIntoSavings = totalSpent > availableBudget
+        ? totalSpent - availableBudget
+        : 0.0;
 
+    // Actual savings shrinks as it's consumed by overspending
+    final actualSavings = max(savingsGoal - overflowIntoSavings, 0.0);
+
+    // The savings segment should shrink as actualSavings decreases
+    final actualSavingsRatio = (actualSavings / disposableIncome).clamp(0.0, 1.0);
+    final availableRatio = 1.0 - actualSavingsRatio;
+
+    // How much of the available budget has been spent
     final spentOfAvailable = availableBudget > 0
         ? (totalSpent / availableBudget).clamp(0.0, double.infinity)
         : 0.0;
 
-    final overflowIntoSavings = totalSpent > availableBudget
-        ? totalSpent - availableBudget
-        : 0.0;
-    final savingsEaten = savingsGoal > 0
-        ? (overflowIntoSavings / savingsGoal).clamp(0.0, 1.0)
-        : 0.0;
-
     final remaining = availableBudget - totalSpent;
     final isOverBudget = remaining < 0;
-    final actualSavings = max(savingsGoal - overflowIntoSavings, 0.0);
     final trulyOverdrawn = totalSpent > disposableIncome;
     final double moneyRemaining = remaining >= 0
         ? remaining
@@ -149,12 +151,11 @@ class BudgetBar extends StatelessWidget {
               height: 40,
               child: Row(
                 children: [
-                  if (savingsRatio > 0)
+                  if (actualSavingsRatio > 0)
                     Expanded(
-                      flex: (savingsRatio * 1000).round(),
+                      flex: (actualSavingsRatio * 1000).round(),
                       child: _SavingsSegment(
-                        eatenRatio: savingsEaten,
-                        savingsGoal: savingsGoal,
+                        actualSavings: actualSavings,
                         formatAmount: formatAmount,
                       ),
                     ),
@@ -310,62 +311,28 @@ class BudgetBar extends StatelessWidget {
   }
 }
 
-/// Savings segment — green background, with the SAME spent colour creeping from
-/// the right when overspending eats into it. Shows £0 when savings are £0.
+/// Savings segment — green background that physically shrinks as savings are consumed.
+/// The segment width represents the actual remaining savings.
 class _SavingsSegment extends StatelessWidget {
   const _SavingsSegment({
-    required this.eatenRatio,
-    required this.savingsGoal,
+    required this.actualSavings,
     required this.formatAmount,
   });
-  final double eatenRatio;
-  final double savingsGoal;
+  final double actualSavings;
   final String Function(double) formatAmount;
 
   @override
   Widget build(BuildContext context) {
-    // When fully eaten, the whole segment is the spent colour.
-    if (eatenRatio >= 1.0) {
-      return Container(
-        decoration: const BoxDecoration(
-          border: Border(right: BorderSide(color: Colors.white, width: 2)),
-        ),
-        child: Container(
-          color: _BarColors.spent,
-          alignment: Alignment.center,
-          child: Text(formatAmount(0), style: _barLabel),
-        ),
-      );
-    }
-
-    final saveFlex = ((1.0 - eatenRatio) * 1000).round();
-    final eatenFlex = (eatenRatio * 1000).round();
-
     return Container(
       decoration: const BoxDecoration(
         border: Border(right: BorderSide(color: Colors.white, width: 2)),
       ),
-      child: Row(
-        children: [
-          // Healthy savings portion
-          if (saveFlex > 0)
-            Expanded(
-              flex: saveFlex,
-              child: Container(
-                color: _BarColors.savings,
-                alignment: Alignment.center,
-                child: eatenRatio <= 0.6
-                    ? (savingsGoal > 0 ? const Text('Save', style: _barLabel) : Text(formatAmount(0), style: _barLabel))
-                    : null,
-              ),
-            ),
-          // Eaten portion — exact same spent colour as the available segment
-          if (eatenFlex > 0)
-            Expanded(
-              flex: eatenFlex,
-              child: Container(color: _BarColors.spent),
-            ),
-        ],
+      child: Container(
+        color: _BarColors.savings,
+        alignment: Alignment.center,
+        child: actualSavings > 0
+            ? const Text('Save', style: _barLabel)
+            : Text(formatAmount(0), style: _barLabel),
       ),
     );
   }

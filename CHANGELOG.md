@@ -31,6 +31,7 @@ All notable changes to the Kakeibo app will be documented in this file.
 - Button enable/disable state updates in real-time without needing to click other fields
 - Removed prescriptive "ideal budget" display from Four Pillars - now shows only actual spending
 - Floating action button displays tooltip on hover
+- Budget bar savings segment now shrinks as it gets consumed by overspending (instead of just changing color)
 
 ## [1.0.0+1] - Initial Release
 
