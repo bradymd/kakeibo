@@ -46,6 +46,14 @@ class _FixedExpensesScreenState extends ConsumerState<FixedExpensesScreen> {
   final _sessionCategories = <String>{};
 
   @override
+  void initState() {
+    super.initState();
+    // Add listeners to text controllers to trigger validation
+    _nameController.addListener(() => setState(() {}));
+    _amountController.addListener(() => setState(() {}));
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _amountController.dispose();
@@ -163,27 +171,8 @@ class _FixedExpensesScreenState extends ConsumerState<FixedExpensesScreen> {
               if (month.fixedExpenses.isNotEmpty)
                 const Divider(height: 32),
 
-              // Add new fixed expense
-              Text('Add Fixed Expense', style: AppTextStyles.subheading),
-              const SizedBox(height: 12),
-
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  hintText: 'e.g. Rent, Electric bill',
-                  prefixIcon: Icon(Icons.label_rounded),
-                ),
-                textCapitalization: TextCapitalization.sentences,
-              ),
-              const SizedBox(height: 12),
-
-              CurrencyInput(
-                controller: _amountController,
-                currencySymbol:
-                    CurrencyFormatter.symbol(currency: currency),
-                label: 'Amount',
-              ),
+              // Add new fixed cost
+              Text('Add Fixed Cost', style: AppTextStyles.subheading),
               const SizedBox(height: 12),
 
               // Category dropdown (plain items — no interactive widgets)
@@ -224,6 +213,25 @@ class _FixedExpensesScreenState extends ConsumerState<FixedExpensesScreen> {
                   }
                 },
               ),
+              const SizedBox(height: 12),
+
+              CurrencyInput(
+                controller: _amountController,
+                currencySymbol:
+                    CurrencyFormatter.symbol(currency: currency),
+                label: 'Amount',
+              ),
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name (optional)',
+                  hintText: 'Add details if needed',
+                  prefixIcon: Icon(Icons.note_rounded),
+                ),
+                textCapitalization: TextCapitalization.sentences,
+              ),
 
               // Custom categories with delete buttons
               ..._customCategoryChips(categories, inUse),
@@ -231,7 +239,7 @@ class _FixedExpensesScreenState extends ConsumerState<FixedExpensesScreen> {
               const SizedBox(height: 16),
 
               SparkleButton(
-                label: 'Add Fixed Expense',
+                label: 'Add Fixed Cost',
                 icon: Icons.add_rounded,
                 onPressed: _canAdd
                     ? () async {
@@ -319,7 +327,6 @@ class _FixedExpensesScreenState extends ConsumerState<FixedExpensesScreen> {
   }
 
   bool get _canAdd {
-    return _nameController.text.trim().isNotEmpty &&
-        (double.tryParse(_amountController.text) ?? 0) > 0;
+    return (double.tryParse(_amountController.text) ?? 0) > 0;
   }
 }

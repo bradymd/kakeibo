@@ -33,6 +33,10 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   @override
   void initState() {
     super.initState();
+    // Add listeners to text controllers to trigger validation
+    _descController.addListener(() => setState(() {}));
+    _amountController.addListener(() => setState(() {}));
+
     if (widget.editExpenseId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final monthAsync = ref.read(currentMonthProvider);

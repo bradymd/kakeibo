@@ -113,8 +113,8 @@ class HomeScreen extends ConsumerWidget {
                 final availableBudget = ref.watch(availableBudgetProvider);
                 final totalSpent = ref.watch(totalSpentProvider);
                 final disposableIncome = ref.watch(disposableIncomeProvider);
+                final fixedCostsTotal = ref.watch(fixedExpensesTotalProvider);
                 final pillarTotals = ref.watch(pillarTotalsProvider);
-                final idealBudget = ref.watch(idealPillarBudgetProvider);
                 final recentExpenses = ref.watch(recentExpensesProvider);
 
                 final now = DateTime.now();
@@ -135,6 +135,8 @@ class HomeScreen extends ConsumerWidget {
                     children: [
                       // Budget bar — at-a-glance money overview
                       BudgetBar(
+                        totalIncome: currentMonth.income,
+                        fixedCostsTotal: fixedCostsTotal,
                         disposableIncome: disposableIncome,
                         savingsGoal: currentMonth.savingsGoal,
                         availableBudget: availableBudget,
@@ -155,31 +157,23 @@ class HomeScreen extends ConsumerWidget {
                         return GradientCard(
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Row(
-                                children: [
-                                  Icon(pillar.icon,
-                                      color: pillar.color, size: 20),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${pillar.label} (${pillar.japanese})',
-                                    style: AppTextStyles.bodyBold
-                                        .copyWith(color: pillar.color),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    '${fmt(spent)} / ${fmt(idealBudget)}',
-                                    style: AppTextStyles.caption,
-                                  ),
-                                ],
+                              Icon(pillar.icon,
+                                  color: pillar.color, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${pillar.label} (${pillar.japanese})',
+                                style: AppTextStyles.bodyBold
+                                    .copyWith(color: pillar.color),
                               ),
-                              const SizedBox(height: 8),
-                              PillarProgressBar(
-                                spent: spent,
-                                budget: idealBudget,
-                                color: pillar.color,
+                              const Spacer(),
+                              Text(
+                                fmt(spent),
+                                style: AppTextStyles.bodyBold.copyWith(
+                                  color: pillar.color,
+                                  fontSize: 15,
+                                ),
                               ),
                             ],
                           ),
@@ -272,6 +266,7 @@ class HomeScreen extends ConsumerWidget {
       floatingActionButton: isSetup
           ? FloatingActionButton(
               onPressed: () => context.push('/add-expense'),
+              tooltip: 'Add Expense',
               child: const Icon(Icons.add_rounded, size: 28),
             )
           : null,

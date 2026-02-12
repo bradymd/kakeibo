@@ -27,6 +27,10 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   @override
   void initState() {
     super.initState();
+    // Add listeners to text controllers to trigger validation
+    _incomeNameController.addListener(() => setState(() {}));
+    _incomeAmountController.addListener(() => setState(() {}));
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final monthAsync = ref.read(currentMonthProvider);
       monthAsync.whenData((month) {
