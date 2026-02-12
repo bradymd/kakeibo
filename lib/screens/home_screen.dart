@@ -123,8 +123,14 @@ class HomeScreen extends ConsumerWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Recent Expenses',
-                              style: AppTextStyles.subheading),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Recent Expenses',
+                                  style: AppTextStyles.subheading),
+                              Text('最近の支出', style: AppTextStyles.japanese),
+                            ],
+                          ),
                           if (currentMonth.expenses.isNotEmpty)
                             TextButton(
                               onPressed: () => context.go('/expenses'),

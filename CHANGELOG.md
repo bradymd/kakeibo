@@ -5,6 +5,11 @@ All notable changes to the Kakeibo app will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Hamburger menu (☰) replaces bottom navigation bar with 6 items: Home, Expenses, Fixed Costs, Start of Month, End of Month, App Settings
+- Kanji labels alongside English throughout: Income (収入), Fixed Costs (固定費), Money to budget (予算), Savings goal (貯金目標), You have spent (支出), Money remaining (残高), Recent Expenses (最近の支出), Four Pillars (四柱)
+- Day-of-month progress shown as individual blocks (one per day)
+- Proportional spending bars on Four Pillars cards
+- Savings goal set via slider on Start of Month screen
 - Income and Fixed Costs breakdown now displayed at top of main page
 - Conditional summary messages based on savings goal and spending status
 - Better handling of £0 and negative amounts in budget bar labels
@@ -17,6 +22,11 @@ All notable changes to the Kakeibo app will be documented in this file.
   - Wolf icon (設出) appears when savings goals are not met or overspent
 
 ### Changed
+- Navigation restructured: flat routes with hamburger menu instead of bottom tab bar
+- Month navigator moved inline with title to save vertical space
+- Reflection screen uses responsive 3-column layout with scaled fonts
+- Budget bar "Money remaining" shows £0 when over budget (summary text still shows real figure)
+- Remaining segment guaranteed minimum width so text stays readable
 - Fixed Costs now displayed in red for better visibility
 - Renamed "Fixed Expense" to "Fixed Cost" throughout the app
 - Reordered Fixed Costs form: Category → Amount → Name (optional)
@@ -32,6 +42,7 @@ All notable changes to the Kakeibo app will be documented in this file.
 - Removed prescriptive "ideal budget" display from Four Pillars - now shows only actual spending
 - Floating action button displays tooltip on hover
 - Budget bar savings segment now shrinks as it gets consumed by overspending (instead of just changing color)
+- Overspend calculation excludes aspirational savings goal
 
 ## [1.0.0+1] - Initial Release
 

@@ -62,9 +62,10 @@ class BudgetBar extends StatelessWidget {
 
     final availableRemaining = availableBudget - totalSpent;
     final isOverBudget = availableRemaining < 0;
-    // When overspent past available budget, show remaining relative to
-    // disposable income — savings goal was aspirational, not real debt.
-    final remaining = isOverBudget
+    // When overspent past available budget, bar/key show £0 —
+    // the real remaining (for summary text) excludes savings goal.
+    final remaining = isOverBudget ? 0.0 : availableRemaining;
+    final realRemaining = isOverBudget
         ? disposableIncome - totalSpent
         : availableRemaining;
     final trulyOverdrawn = totalSpent > disposableIncome;
@@ -96,8 +97,7 @@ class BudgetBar extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text('Income (収入)', style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
+                  fontWeight: FontWeight.w600, fontSize: 12,
                 )),
               ),
               Text(formatAmount(totalIncome), style: AppTextStyles.body.copyWith(
@@ -115,8 +115,7 @@ class BudgetBar extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text('Fixed Costs (固定費)', style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
+                  fontWeight: FontWeight.w600, fontSize: 12,
                 )),
               ),
               Text(formatAmount(fixedCostsTotal), style: AppTextStyles.body.copyWith(
@@ -141,8 +140,7 @@ class BudgetBar extends StatelessWidget {
                   color: AppColors.vividPurple, size: 20),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Money to budget (予算)',
-                    style: AppTextStyles.label),
+                child: Text('Money to budget (予算)', style: AppTextStyles.label),
               ),
               Text(formatAmount(disposableIncome), style: AppTextStyles.bodyBold),
             ],
@@ -216,8 +214,8 @@ class BudgetBar extends StatelessWidget {
               ),
               child: Text(
                 savingsGoal > 0
-                    ? 'To meet your savings goal of ${formatAmount(savingsGoal)}, you have ${formatAmount(remaining)} remaining'
-                    : 'You have ${formatAmount(remaining)} left to spend or save',
+                    ? 'To meet your savings goal of ${formatAmount(savingsGoal)}, you have ${formatAmount(realRemaining)} remaining'
+                    : 'You have ${formatAmount(realRemaining)} left to spend or save',
                 style: AppTextStyles.subheading.copyWith(
                   color: _BarColors.remaining,
                 ),
@@ -233,7 +231,7 @@ class BudgetBar extends StatelessWidget {
               ),
               child: Text(
                 savingsGoal > 0
-                    ? 'You have ${formatAmount(remaining)} left to spend or save'
+                    ? 'You have ${formatAmount(realRemaining)} left to spend or save'
                     : "You didn't meet your savings goal",
                 style: AppTextStyles.subheading.copyWith(
                   color: _BarColors.spent,
@@ -369,7 +367,7 @@ class _AvailableSegment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final spentFlex = max((spentRatio * 1000).round(), 80);
-    final leftFlex = max(((1.0 - spentRatio) * 1000).round(), 80);
+    final leftFlex = max(((1.0 - spentRatio) * 1000).round(), 160);
 
     return Row(
       children: [
@@ -396,10 +394,9 @@ class _AvailableSegment extends StatelessWidget {
             alignment: Alignment.center,
             child: FittedBox(
               fit: BoxFit.scaleDown,
-              child: Text(
-                formatAmount(remaining),
-                style: _barLabel,
-              ),
+              child: remaining > 0
+                  ? Text(formatAmount(remaining), style: _barLabel)
+                  : Text(_fmtZero(formatAmount), style: _barLabel),
             ),
           ),
         ),
@@ -450,13 +447,10 @@ class _KeyRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: AppTextStyles.caption.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-          ),
-        ),
+        Text(label, style: AppTextStyles.caption.copyWith(
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        )),
         const Spacer(),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
