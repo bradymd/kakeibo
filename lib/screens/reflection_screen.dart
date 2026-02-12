@@ -91,6 +91,9 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
           // Calculate what they could have saved
           final potentialSavings = (remaining >= 0 ? currentMonth.savingsGoal : max(0.0, currentMonth.savingsGoal + remaining)).toDouble();
 
+          // Determine which icon to show: pig if savings goal met, wolf if not
+          final showPig = remaining >= 0 && currentMonth.savingsGoal > 0;
+
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
@@ -109,6 +112,15 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Icon - pig if savings goal met, wolf if not
+                    Center(
+                      child: Image.asset(
+                        showPig ? 'assets/images/pig.png' : 'assets/images/wolf.png',
+                        height: 120,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Text('Your Month in Review', style: AppTextStyles.heading),
                     const SizedBox(height: 16),
 

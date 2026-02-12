@@ -12,6 +12,9 @@ All notable changes to the Kakeibo app will be documented in this file.
   - Income and fixed costs breakdown
   - Whether a savings goal was set
   - Spending outcome (met goal, partial savings, or overspent)
+- Japanese-style pig and wolf mascot icons on Monthly Reflection:
+  - Pig icon (貯試) appears when savings goals are met
+  - Wolf icon (設出) appears when savings goals are not met or overspent
 
 ### Changed
 - Fixed Costs now displayed in red for better visibility
