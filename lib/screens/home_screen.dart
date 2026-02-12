@@ -113,33 +113,7 @@ class HomeScreen extends ConsumerWidget {
                       Text('Four Pillars', style: AppTextStyles.subheading),
                       Text('四柱', style: AppTextStyles.japanese),
                       const SizedBox(height: 10),
-                      ...Pillar.values.map((pillar) {
-                        final spent = pillarTotals[pillar] ?? 0;
-                        return GradientCard(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.all(14),
-                          child: Row(
-                            children: [
-                              Icon(pillar.icon,
-                                  color: pillar.color, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${pillar.label} (${pillar.japanese})',
-                                style: AppTextStyles.bodyBold
-                                    .copyWith(color: pillar.color),
-                              ),
-                              const Spacer(),
-                              Text(
-                                fmt(spent),
-                                style: AppTextStyles.bodyBold.copyWith(
-                                  color: pillar.color,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
+                      ..._buildPillarRows(pillarTotals, fmt),
 
 
 
@@ -194,4 +168,73 @@ class HomeScreen extends ConsumerWidget {
             ),
     );
   }
+}
+
+List<Widget> _buildPillarRows(
+  Map<Pillar, double> pillarTotals,
+  String Function(double) fmt,
+) {
+  final maxSpent = pillarTotals.values.fold(0.0, (a, b) => a > b ? a : b);
+
+  return Pillar.values.map((pillar) {
+    final spent = pillarTotals[pillar] ?? 0;
+    final ratio = maxSpent > 0 ? (spent / maxSpent).clamp(0.0, 1.0) : 0.0;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GradientCard(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(pillar.icon, color: pillar.color, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  '${pillar.label} (${pillar.japanese})',
+                  style: AppTextStyles.bodyBold.copyWith(color: pillar.color),
+                ),
+                const Spacer(),
+                Text(
+                  fmt(spent),
+                  style: AppTextStyles.bodyBold.copyWith(
+                    color: pillar.color,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: SizedBox(
+                height: 8,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final barWidth = constraints.maxWidth * ratio;
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            color: pillar.color.withValues(alpha: 0.1),
+                          ),
+                        ),
+                        Container(
+                          width: barWidth,
+                          decoration: BoxDecoration(
+                            color: pillar.color,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }).toList();
 }

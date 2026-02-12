@@ -95,7 +95,7 @@ class BudgetBar extends StatelessWidget {
                   color: AppColors.success, size: 18),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Income', style: AppTextStyles.caption.copyWith(
+                child: Text('Income (収入)', style: AppTextStyles.caption.copyWith(
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
                 )),
@@ -114,7 +114,7 @@ class BudgetBar extends StatelessWidget {
                   color: Colors.red, size: 18),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Fixed Costs', style: AppTextStyles.caption.copyWith(
+                child: Text('Fixed Costs (固定費)', style: AppTextStyles.caption.copyWith(
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
                 )),
@@ -141,7 +141,7 @@ class BudgetBar extends StatelessWidget {
                   color: AppColors.vividPurple, size: 20),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Money to budget',
+                child: Text('Money to budget (予算)',
                     style: AppTextStyles.label),
               ),
               Text(formatAmount(disposableIncome), style: AppTextStyles.bodyBold),
@@ -182,7 +182,7 @@ class BudgetBar extends StatelessWidget {
           // Savings: revised amount stays green (it's still their savings)
           _KeyRow(
             color: _BarColors.savings,
-            label: 'Savings goal',
+            label: 'Savings goal (貯金目標)',
             amount: formatAmount(savingsGoal),
             amountColor: _BarColors.savings,
             strikethrough: isOverBudget,
@@ -192,14 +192,14 @@ class BudgetBar extends StatelessWidget {
           const SizedBox(height: 4),
           _KeyRow(
             color: _BarColors.spent,
-            label: 'You have spent',
+            label: 'You have spent (支出)',
             amount: formatAmount(totalSpent),
             amountColor: _BarColors.spent,
           ),
           const SizedBox(height: 4),
           _KeyRow(
             color: _BarColors.remaining,
-            label: 'Money remaining',
+            label: 'Money remaining (残高)',
             amount: formatAmount(remaining),
             amountColor: _BarColors.remaining,
           ),
@@ -209,7 +209,7 @@ class BudgetBar extends StatelessWidget {
           if (!isOverBudget)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
                 color: _BarColors.remaining.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
@@ -218,8 +218,7 @@ class BudgetBar extends StatelessWidget {
                 savingsGoal > 0
                     ? 'To meet your savings goal of ${formatAmount(savingsGoal)}, you have ${formatAmount(remaining)} remaining'
                     : 'You have ${formatAmount(remaining)} left to spend or save',
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w600,
+                style: AppTextStyles.subheading.copyWith(
                   color: _BarColors.remaining,
                 ),
               ),
@@ -227,7 +226,7 @@ class BudgetBar extends StatelessWidget {
           else if (!trulyOverdrawn)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
                 color: _BarColors.spent.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
@@ -236,8 +235,7 @@ class BudgetBar extends StatelessWidget {
                 savingsGoal > 0
                     ? 'You have ${formatAmount(remaining)} left to spend or save'
                     : "You didn't meet your savings goal",
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w600,
+                style: AppTextStyles.subheading.copyWith(
                   color: _BarColors.spent,
                 ),
               ),
@@ -245,15 +243,14 @@ class BudgetBar extends StatelessWidget {
           else
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
                 color: _BarColors.spent.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 "You are overspent by ${formatAmount(totalSpent - disposableIncome)}",
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w600,
+                style: AppTextStyles.subheading.copyWith(
                   color: _BarColors.spent,
                 ),
               ),
@@ -292,18 +289,28 @@ class BudgetBar extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: SizedBox(
-                    height: 6,
-                    child: LinearProgressIndicator(
-                      value: dayProgress,
-                      backgroundColor:
-                          AppColors.vividPurple.withValues(alpha: 0.12),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                          AppColors.vividPurple),
-                    ),
-                  ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final gap = 2.0;
+                    final totalGaps = (daysInMonth - 1) * gap;
+                    final blockWidth = (constraints.maxWidth - totalGaps) / daysInMonth;
+                    return Row(
+                      children: List.generate(daysInMonth, (i) {
+                        final filled = i < dayOfMonth;
+                        return Container(
+                          width: blockWidth,
+                          height: 24,
+                          margin: EdgeInsets.only(right: i < daysInMonth - 1 ? gap : 0),
+                          decoration: BoxDecoration(
+                            color: filled
+                                ? AppColors.vividPurple
+                                : AppColors.vividPurple.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        );
+                      }),
+                    );
+                  },
                 ),
               ],
             ),
