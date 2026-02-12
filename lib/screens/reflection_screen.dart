@@ -218,15 +218,34 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
                             ],
                           ),
                         ),
-                        // Col 3: wolf/pig image fills the whole column
+                        // Col 3: wolf/pig image with correct kanji label
                         Expanded(
                           flex: 1,
                           child: Padding(
                             padding: EdgeInsets.only(left: 12 * s),
-                            child: Image.asset(
-                              showPig ? 'assets/images/pig.png' : 'assets/images/wolf.png',
-                              fit: BoxFit.contain,
-                              alignment: Alignment.topCenter,
+                            child: Column(
+                              children: [
+                                Text(
+                                  showPig ? '節約家' : '浪費家',
+                                  style: AppTextStyles.heading.copyWith(
+                                    fontSize: 20 * s,
+                                    color: showPig ? AppColors.success : AppColors.hotPink,
+                                  ),
+                                ),
+                                Text(
+                                  showPig ? 'Saver' : 'Spender',
+                                  style: AppTextStyles.caption.copyWith(
+                                    fontSize: 11 * s,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                SizedBox(height: 8 * s),
+                                Image.asset(
+                                  showPig ? 'assets/images/pig-overlay.png' : 'assets/images/wolf-overlay.png',
+                                  fit: BoxFit.contain,
+                                  alignment: Alignment.topCenter,
+                                ),
+                              ],
                             ),
                           ),
                         ),
