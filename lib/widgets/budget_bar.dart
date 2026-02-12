@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:kakeibo/theme/app_colors.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
 
+/// Format zero as compact (e.g. "£0" not "£0.00").
+String _fmtZero(String Function(double) formatAmount) {
+  return formatAmount(0).replaceFirst('.00', '');
+}
+
 /// Consistent colours used in both the bar segments and the key.
 class _BarColors {
   static const savings = Color(0xFF10B981);    // green — matches AppColors.success
@@ -46,7 +51,7 @@ class BudgetBar extends StatelessWidget {
     // Actual savings shrinks as it's consumed by overspending
     final actualSavings = max(savingsGoal - overflowIntoSavings, 0.0);
 
-    // The savings segment should shrink as actualSavings decreases
+    // The savings segment shrinks as spending eats into it
     final actualSavingsRatio = (actualSavings / disposableIncome).clamp(0.0, 1.0);
     final availableRatio = 1.0 - actualSavingsRatio;
 
@@ -55,14 +60,14 @@ class BudgetBar extends StatelessWidget {
         ? (totalSpent / availableBudget).clamp(0.0, double.infinity)
         : 0.0;
 
-    final remaining = availableBudget - totalSpent;
-    final isOverBudget = remaining < 0;
+    final availableRemaining = availableBudget - totalSpent;
+    final isOverBudget = availableRemaining < 0;
+    // When overspent past available budget, show remaining relative to
+    // disposable income — savings goal was aspirational, not real debt.
+    final remaining = isOverBudget
+        ? disposableIncome - totalSpent
+        : availableRemaining;
     final trulyOverdrawn = totalSpent > disposableIncome;
-    final double moneyRemaining = remaining >= 0
-        ? remaining
-        : trulyOverdrawn
-            ? disposableIncome - totalSpent
-            : 0.0;
 
     final daysToGo = daysInMonth - dayOfMonth;
     final dayProgress = (dayOfMonth / daysInMonth).clamp(0.0, 1.0);
@@ -144,31 +149,29 @@ class BudgetBar extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          // The stacked bar
+          // The stacked bar — always show all three segments as a gauge
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: SizedBox(
               height: 40,
               child: Row(
                 children: [
-                  if (actualSavingsRatio > 0)
-                    Expanded(
-                      flex: (actualSavingsRatio * 1000).round(),
-                      child: _SavingsSegment(
-                        actualSavings: actualSavings,
-                        formatAmount: formatAmount,
-                      ),
+                  Expanded(
+                    flex: max((actualSavingsRatio * 1000).round(), 80),
+                    child: _SavingsSegment(
+                      actualSavings: actualSavings,
+                      formatAmount: formatAmount,
                     ),
-                  if (availableRatio > 0)
-                    Expanded(
-                      flex: (availableRatio * 1000).round(),
-                      child: _AvailableSegment(
-                        spentRatio: spentOfAvailable.clamp(0.0, 1.0),
-                        totalSpent: totalSpent,
-                        remaining: remaining,
-                        formatAmount: formatAmount,
-                      ),
+                  ),
+                  Expanded(
+                    flex: max((availableRatio * 1000).round(), 160),
+                    child: _AvailableSegment(
+                      spentRatio: spentOfAvailable.clamp(0.0, 1.0),
+                      totalSpent: totalSpent,
+                      remaining: remaining,
+                      formatAmount: formatAmount,
                     ),
+                  ),
                 ],
               ),
             ),
@@ -197,7 +200,7 @@ class BudgetBar extends StatelessWidget {
           _KeyRow(
             color: _BarColors.remaining,
             label: 'Money remaining',
-            amount: formatAmount(moneyRemaining),
+            amount: formatAmount(remaining),
             amountColor: _BarColors.remaining,
           ),
 
@@ -231,7 +234,7 @@ class BudgetBar extends StatelessWidget {
               ),
               child: Text(
                 savingsGoal > 0
-                    ? 'You have ${formatAmount(moneyRemaining)} left to spend or save'
+                    ? 'You have ${formatAmount(remaining)} left to spend or save'
                     : "You didn't meet your savings goal",
                 style: AppTextStyles.caption.copyWith(
                   fontWeight: FontWeight.w600,
@@ -330,9 +333,12 @@ class _SavingsSegment extends StatelessWidget {
       child: Container(
         color: _BarColors.savings,
         alignment: Alignment.center,
-        child: actualSavings > 0
-            ? const Text('Save', style: _barLabel)
-            : Text(formatAmount(0), style: _barLabel),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: actualSavings > 0
+              ? Text(formatAmount(actualSavings), style: _barLabel)
+              : Text(_fmtZero(formatAmount), style: _barLabel),
+        ),
       ),
     );
   }
@@ -355,41 +361,41 @@ class _AvailableSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final spentFlex = (spentRatio * 1000).round();
-    final leftFlex = ((1.0 - spentRatio) * 1000).round();
-    final isOverspent = remaining < 0;
+    final spentFlex = max((spentRatio * 1000).round(), 80);
+    final leftFlex = max(((1.0 - spentRatio) * 1000).round(), 80);
 
     return Row(
       children: [
-        if (spentFlex > 0)
-          Expanded(
-            flex: spentFlex,
-            child: Container(
+        Expanded(
+          flex: spentFlex,
+          child: Container(
+            decoration: const BoxDecoration(
               color: _BarColors.spent,
-              alignment: Alignment.center,
-              child: spentRatio >= 0.12
-                  ? (totalSpent > 0 ? const Text('Spent', style: _barLabel) : Text(formatAmount(0), style: _barLabel.copyWith(color: Colors.white)))
-                  : null,
+              border: Border(right: BorderSide(color: Colors.white, width: 1)),
+            ),
+            alignment: Alignment.center,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: totalSpent > 0
+                  ? Text(formatAmount(totalSpent), style: _barLabel)
+                  : Text(_fmtZero(formatAmount), style: _barLabel),
             ),
           ),
-        if (leftFlex > 0)
-          Expanded(
-            flex: leftFlex,
-            child: Container(
-              color: _BarColors.remaining,
-              alignment: Alignment.center,
-              child: spentRatio <= 0.88
-                  ? (remaining > 0
-                      ? const Text('Left', style: _barLabel)
-                      : Text(
-                          formatAmount(remaining),
-                          style: _barLabel.copyWith(
-                            color: isOverspent ? Colors.red : Colors.white,
-                          ),
-                        ))
-                  : null,
+        ),
+        Expanded(
+          flex: leftFlex,
+          child: Container(
+            color: _BarColors.remaining,
+            alignment: Alignment.center,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                formatAmount(remaining),
+                style: _barLabel,
+              ),
             ),
           ),
+        ),
       ],
     );
   }

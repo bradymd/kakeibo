@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kakeibo/providers/kakeibo_provider.dart';
 import 'package:kakeibo/providers/month_calculations_provider.dart';
 import 'package:kakeibo/providers/settings_provider.dart';
@@ -93,6 +94,13 @@ class _FixedExpensesScreenState extends ConsumerState<FixedExpensesScreen> {
       title: 'Fixed Costs',
       subtitle: 'Monthly bills & commitments',
       showBackButton: true,
+      onBack: () {
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/');
+        }
+      },
       body: monthAsync.when(
         loading: () =>
             const Center(child: CircularProgressIndicator()),

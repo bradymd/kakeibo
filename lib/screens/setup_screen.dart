@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -65,9 +66,16 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         CurrencyFormatter.format(amount, currency: currency);
 
     return KakeiboScaffold(
-      title: 'Monthly Setup',
+      title: 'Start of Month',
       subtitle: displayMonth,
       showBackButton: true,
+      onBack: () {
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/');
+        }
+      },
       body: monthAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -268,13 +276,43 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                       'Set your savings target for this month',
                       style: AppTextStyles.caption,
                     ),
-                    const SizedBox(height: 12),
-                    CurrencyInput(
-                      controller: _savingsController,
-                      currencySymbol:
-                          CurrencyFormatter.symbol(currency: currency),
-                      label: 'Savings Goal',
-                      onChanged: (_) => setState(() {}),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: Text(
+                        fmt(savings),
+                        style: AppTextStyles.currency.copyWith(
+                          color: AppColors.vividPurple,
+                        ),
+                      ),
+                    ),
+                    if (totalIncome - fixedTotal > 0)
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: AppColors.vividPurple,
+                          inactiveTrackColor: AppColors.vividPurple.withValues(alpha: 0.15),
+                          thumbColor: AppColors.vividPurple,
+                          overlayColor: AppColors.vividPurple.withValues(alpha: 0.12),
+                        ),
+                        child: Slider(
+                          value: savings.clamp(0, totalIncome - fixedTotal),
+                          min: 0,
+                          max: totalIncome - fixedTotal,
+                          divisions: max((totalIncome - fixedTotal).round(), 1),
+                          onChanged: (value) {
+                            _savingsController.text = value.roundToDouble().toStringAsFixed(2);
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(fmt(0), style: AppTextStyles.caption),
+                          Text(fmt(totalIncome - fixedTotal), style: AppTextStyles.caption),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -328,7 +366,13 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                               income: totalIncome,
                               savingsGoal: savings,
                             );
-                        if (context.mounted) context.pop();
+                        if (context.mounted) {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go('/');
+                          }
+                        }
                       }
                     : null,
               ),

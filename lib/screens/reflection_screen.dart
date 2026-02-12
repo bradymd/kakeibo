@@ -72,9 +72,16 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
         CurrencyFormatter.format(amount, currency: currency);
 
     return KakeiboScaffold(
-      title: 'Monthly Reflection',
+      title: 'End of Month',
       subtitle: displayMonth,
       showBackButton: true,
+      onBack: () {
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/');
+        }
+      },
       body: monthAsync.when(
         loading: () =>
             const Center(child: CircularProgressIndicator()),
@@ -84,7 +91,6 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
           final isCompleted = currentMonth.reflection.completed;
 
           final disposableIncome = ref.watch(disposableIncomeProvider);
-          final availableBudget = ref.watch(availableBudgetProvider);
           final remaining = ref.watch(remainingProvider);
           final fixedCostsTotal = ref.watch(fixedExpensesTotalProvider);
 
@@ -97,153 +103,137 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              // Month summary narrative
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.vividPurple.withValues(alpha: 0.1), AppColors.softBlue],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.vividPurple.withValues(alpha: 0.2), width: 2),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header with icon on the right
-                    Row(
+              // Month summary narrative — scales with window width
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // Scale factor: 1.0 at 400px, up to 1.6 at ~1200px
+                  final s = (constraints.maxWidth / 400).clamp(1.0, 1.6);
+
+                  TextStyle bodyScaled() => AppTextStyles.body.copyWith(fontSize: 14 * s);
+                  TextStyle boldScaled({Color? color}) => AppTextStyles.bodyBold.copyWith(fontSize: 14 * s, color: color);
+
+                  return Container(
+                    padding: EdgeInsets.all(20 * s),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.vividPurple.withValues(alpha: 0.1), AppColors.softBlue],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.vividPurple.withValues(alpha: 0.2), width: 2),
+                    ),
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Cols 1-2: title + narrative text
                         Expanded(
+                          flex: 2,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Your Month in Review', style: AppTextStyles.heading),
+                              Text('Your Month in Review',
+                                  style: AppTextStyles.heading.copyWith(fontSize: 24 * s)),
+                              SizedBox(height: 16 * s),
+
+                              // Income
+                              RichText(
+                                text: TextSpan(
+                                  style: bodyScaled(),
+                                  children: [
+                                    const TextSpan(text: 'This month you had an income of '),
+                                    TextSpan(text: fmt(currentMonth.income), style: boldScaled(color: AppColors.success)),
+                                    const TextSpan(text: '.'),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: 8 * s),
+
+                              // Fixed costs
+                              if (fixedCostsTotal > 0) ...[
+                                RichText(
+                                  text: TextSpan(
+                                    style: bodyScaled(),
+                                    children: [
+                                      const TextSpan(text: 'Your fixed costs were '),
+                                      TextSpan(text: fmt(fixedCostsTotal), style: boldScaled(color: Colors.red)),
+                                      const TextSpan(text: ', leaving you '),
+                                      TextSpan(text: fmt(disposableIncome), style: boldScaled()),
+                                      const TextSpan(text: ' to budget.'),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: 8 * s),
+                              ],
+
+                              // Savings goal
+                              if (currentMonth.savingsGoal > 0) ...[
+                                RichText(
+                                  text: TextSpan(
+                                    style: bodyScaled(),
+                                    children: [
+                                      const TextSpan(text: 'You set a savings goal of '),
+                                      TextSpan(text: fmt(currentMonth.savingsGoal), style: boldScaled(color: AppColors.vividPurple)),
+                                      const TextSpan(text: '.'),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: 8 * s),
+                              ] else ...[
+                                Text('You didn\'t set a savings goal.', style: bodyScaled()),
+                                SizedBox(height: 8 * s),
+                              ],
+
+                              // Spending outcome
+                              RichText(
+                                text: TextSpan(
+                                  style: bodyScaled(),
+                                  children: [
+                                    if (remaining >= 0) ...[
+                                      if (currentMonth.savingsGoal > 0) ...[
+                                        const TextSpan(text: 'You met your savings goal and had '),
+                                        TextSpan(text: fmt(remaining), style: boldScaled(color: AppColors.success)),
+                                        const TextSpan(text: ' remaining.'),
+                                      ] else ...[
+                                        const TextSpan(text: 'You had '),
+                                        TextSpan(text: fmt(remaining), style: boldScaled(color: AppColors.success)),
+                                        const TextSpan(text: ' left to spend or save.'),
+                                      ],
+                                    ] else ...[
+                                      if (potentialSavings > 0) ...[
+                                        const TextSpan(text: 'You managed to save '),
+                                        TextSpan(text: fmt(potentialSavings), style: boldScaled(color: AppColors.hotPink)),
+                                        const TextSpan(text: ' of your '),
+                                        TextSpan(text: fmt(currentMonth.savingsGoal), style: boldScaled()),
+                                        const TextSpan(text: ' savings goal.'),
+                                      ] else ...[
+                                        const TextSpan(text: 'You overspent by '),
+                                        TextSpan(text: fmt(totalSpent - disposableIncome), style: boldScaled(color: Colors.red)),
+                                        const TextSpan(text: '.'),
+                                      ],
+                                    ],
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        // Icon - pig if savings goal met, wolf if not
-                        Image.asset(
-                          showPig ? 'assets/images/pig.png' : 'assets/images/wolf.png',
-                          height: 140,
-                          fit: BoxFit.contain,
+                        // Col 3: wolf/pig image fills the whole column
+                        Expanded(
+                          flex: 1,
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 12 * s),
+                            child: Image.asset(
+                              showPig ? 'assets/images/pig.png' : 'assets/images/wolf.png',
+                              fit: BoxFit.contain,
+                              alignment: Alignment.topCenter,
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-
-                    // Income
-                    RichText(
-                      text: TextSpan(
-                        style: AppTextStyles.body,
-                        children: [
-                          const TextSpan(text: 'This month you had an income of '),
-                          TextSpan(
-                            text: fmt(currentMonth.income),
-                            style: AppTextStyles.bodyBold.copyWith(color: AppColors.success),
-                          ),
-                          const TextSpan(text: '.'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Fixed costs
-                    if (fixedCostsTotal > 0) ...[
-                      RichText(
-                        text: TextSpan(
-                          style: AppTextStyles.body,
-                          children: [
-                            const TextSpan(text: 'Your fixed costs were '),
-                            TextSpan(
-                              text: fmt(fixedCostsTotal),
-                              style: AppTextStyles.bodyBold.copyWith(color: Colors.red),
-                            ),
-                            const TextSpan(text: ', leaving you '),
-                            TextSpan(
-                              text: fmt(disposableIncome),
-                              style: AppTextStyles.bodyBold,
-                            ),
-                            const TextSpan(text: ' to budget.'),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-
-                    // Savings goal
-                    if (currentMonth.savingsGoal > 0) ...[
-                      RichText(
-                        text: TextSpan(
-                          style: AppTextStyles.body,
-                          children: [
-                            const TextSpan(text: 'You set a savings goal of '),
-                            TextSpan(
-                              text: fmt(currentMonth.savingsGoal),
-                              style: AppTextStyles.bodyBold.copyWith(color: AppColors.vividPurple),
-                            ),
-                            const TextSpan(text: '.'),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ] else ...[
-                      const Text('You didn\'t set a savings goal.'),
-                      const SizedBox(height: 8),
-                    ],
-
-                    // Spending outcome
-                    RichText(
-                      text: TextSpan(
-                        style: AppTextStyles.body,
-                        children: [
-                          if (remaining >= 0) ...[
-                            if (currentMonth.savingsGoal > 0) ...[
-                              const TextSpan(text: 'You met your savings goal and had '),
-                              TextSpan(
-                                text: fmt(remaining),
-                                style: AppTextStyles.bodyBold.copyWith(color: AppColors.success),
-                              ),
-                              const TextSpan(text: ' remaining.'),
-                            ] else ...[
-                              const TextSpan(text: 'You had '),
-                              TextSpan(
-                                text: fmt(remaining),
-                                style: AppTextStyles.bodyBold.copyWith(color: AppColors.success),
-                              ),
-                              const TextSpan(text: ' left to spend or save.'),
-                            ],
-                          ] else ...[
-                            if (potentialSavings > 0) ...[
-                              const TextSpan(text: 'You managed to save '),
-                              TextSpan(
-                                text: fmt(potentialSavings),
-                                style: AppTextStyles.bodyBold.copyWith(color: AppColors.hotPink),
-                              ),
-                              const TextSpan(text: ' of your '),
-                              TextSpan(
-                                text: fmt(currentMonth.savingsGoal),
-                                style: AppTextStyles.bodyBold,
-                              ),
-                              const TextSpan(text: ' savings goal.'),
-                            ] else ...[
-                              const TextSpan(text: 'You overspent by '),
-                              TextSpan(
-                                text: fmt(-remaining),
-                                style: AppTextStyles.bodyBold.copyWith(color: Colors.red),
-                              ),
-                              if (currentMonth.savingsGoal > 0)
-                                const TextSpan(text: ', including your savings goal.'),
-                            ],
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
               const SizedBox(height: 20),
 
@@ -257,7 +247,7 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Spending Breakdown',
+                    Text('Reflection on your spending this month',
                         style: AppTextStyles.subheading),
                     Text('Total: ${fmt(totalSpent)}',
                         style: AppTextStyles.caption),
@@ -363,7 +353,13 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
                         monthId: monthId,
                         reflection: reflection,
                       );
-                  if (context.mounted) context.pop();
+                  if (context.mounted) {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/');
+                    }
+                  }
                 },
               ),
 

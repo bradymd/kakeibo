@@ -8,11 +8,9 @@ import 'package:kakeibo/providers/settings_provider.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
 import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/theme/app_colors.dart';
-import 'package:kakeibo/theme/app_gradients.dart';
-import 'package:kakeibo/theme/app_text_styles.dart';
-import 'package:kakeibo/widgets/cherry_blossom_decoration.dart';
 import 'package:kakeibo/widgets/empty_state.dart';
 import 'package:kakeibo/widgets/expense_tile.dart';
+import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
 import 'package:kakeibo/widgets/month_navigator.dart';
 
 class AllExpensesScreen extends ConsumerStatefulWidget {
@@ -40,69 +38,36 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
     String fmt(double amount) =>
         CurrencyFormatter.format(amount, currency: currency);
 
-    return Scaffold(
+    return KakeiboScaffold(
+      title: 'Expenses',
+      subtitle: 'Total: ${fmt(totalSpent)}',
+      showBackButton: true,
+      onBack: () {
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/');
+        }
+      },
+      actions: [
+        MonthNavigator(
+          displayText: displayMonth,
+          onPrevious: () {
+            ref.read(currentMonthIdProvider.notifier).state =
+                MonthHelpers.getPrevMonthId(monthId);
+          },
+          onNext: () {
+            ref.read(currentMonthIdProvider.notifier).state =
+                MonthHelpers.getNextMonthId(monthId);
+          },
+        ),
+      ],
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.push('/add-expense'),
+        child: const Icon(Icons.add_rounded, size: 28),
+      ),
       body: Column(
         children: [
-          // Header
-          Container(
-            decoration: const BoxDecoration(gradient: AppGradients.header),
-            child: SafeArea(
-              bottom: false,
-              child: Stack(
-                children: [
-                  const Positioned.fill(
-                    child: CherryBlossomDecoration(opacity: 0.08),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Expenses',
-                                    style: AppTextStyles.heading
-                                        .copyWith(color: Colors.white),
-                                  ),
-                                  Text(
-                                    'Total: ${fmt(totalSpent)}',
-                                    style: AppTextStyles.caption
-                                        .copyWith(color: Colors.white70),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        MonthNavigator(
-                          displayText: displayMonth,
-                          onPrevious: () {
-                            ref
-                                .read(currentMonthIdProvider.notifier)
-                                .state =
-                                MonthHelpers.getPrevMonthId(monthId);
-                          },
-                          onNext: () {
-                            ref
-                                .read(currentMonthIdProvider.notifier)
-                                .state =
-                                MonthHelpers.getNextMonthId(monthId);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
           // Pillar filter chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -183,10 +148,6 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/add-expense'),
-        child: const Icon(Icons.add_rounded, size: 28),
       ),
     );
   }

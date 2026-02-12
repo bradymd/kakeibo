@@ -79,6 +79,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       title: isEditing ? 'Edit Expense' : 'Add Expense',
       subtitle: isEditing ? _editing!.description : null,
       showBackButton: true,
+      showMenuButton: false,
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kakeibo/providers/settings_provider.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
 import 'package:kakeibo/theme/app_colors.dart';
@@ -18,6 +19,14 @@ class SettingsScreen extends ConsumerWidget {
     return KakeiboScaffold(
       title: 'Settings',
       subtitle: 'Preferences',
+      showBackButton: true,
+      onBack: () {
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/');
+        }
+      },
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

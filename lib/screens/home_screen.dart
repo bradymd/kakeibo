@@ -8,15 +8,13 @@ import 'package:kakeibo/providers/settings_provider.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
 import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/theme/app_colors.dart';
-import 'package:kakeibo/theme/app_gradients.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
-import 'package:kakeibo/widgets/cherry_blossom_decoration.dart';
 import 'package:kakeibo/widgets/empty_state.dart';
 import 'package:kakeibo/widgets/expense_tile.dart';
 import 'package:kakeibo/widgets/budget_bar.dart';
 import 'package:kakeibo/widgets/gradient_card.dart';
+import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
 import 'package:kakeibo/widgets/month_navigator.dart';
-import 'package:kakeibo/widgets/progress_bar.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -35,66 +33,29 @@ class HomeScreen extends ConsumerWidget {
     final (:year, :month) = MonthHelpers.parseMonthId(monthId);
     final displayMonth = MonthHelpers.formatMonthDisplay(year, month);
 
-    return Scaffold(
-      body: Column(
-        children: [
-          // Header
-          Container(
-            decoration: const BoxDecoration(gradient: AppGradients.header),
-            child: SafeArea(
-              bottom: false,
-              child: Stack(
-                children: [
-                  const Positioned.fill(
-                    child: CherryBlossomDecoration(opacity: 0.08),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '家計簿 Kakeibo',
-                                    style: AppTextStyles.heading
-                                        .copyWith(color: Colors.white),
-                                  ),
-                                  Text(
-                                    'Mindful Japanese Budgeting',
-                                    style: AppTextStyles.caption
-                                        .copyWith(color: Colors.white70),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        MonthNavigator(
-                          displayText: displayMonth,
-                          onPrevious: () {
-                            ref.read(currentMonthIdProvider.notifier).state =
-                                MonthHelpers.getPrevMonthId(monthId);
-                          },
-                          onNext: () {
-                            ref.read(currentMonthIdProvider.notifier).state =
-                                MonthHelpers.getNextMonthId(monthId);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // Body
-          Expanded(
-            child: monthAsync.when(
+    return KakeiboScaffold(
+      title: '家計簿 Kakeibo',
+      actions: [
+        MonthNavigator(
+          displayText: displayMonth,
+          onPrevious: () {
+            ref.read(currentMonthIdProvider.notifier).state =
+                MonthHelpers.getPrevMonthId(monthId);
+          },
+          onNext: () {
+            ref.read(currentMonthIdProvider.notifier).state =
+                MonthHelpers.getNextMonthId(monthId);
+          },
+        ),
+      ],
+      floatingActionButton: isSetup
+          ? FloatingActionButton(
+              onPressed: () => context.push('/add-expense'),
+              tooltip: 'Add Expense',
+              child: const Icon(Icons.add_rounded, size: 28),
+            )
+          : null,
+      body: monthAsync.when(
               loading: () => const Center(
                 child: CircularProgressIndicator(color: AppColors.hotPink),
               ),
@@ -180,36 +141,7 @@ class HomeScreen extends ConsumerWidget {
                         );
                       }),
 
-                      const SizedBox(height: 16),
 
-                      // Quick actions
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _QuickAction(
-                              label: 'Fixed Costs',
-                              icon: Icons.receipt_long_rounded,
-                              onTap: () => context.push('/fixed-expenses'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _QuickAction(
-                              label: 'Reflection',
-                              icon: Icons.self_improvement_rounded,
-                              onTap: () => context.push('/reflection'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _QuickAction(
-                              label: 'Edit Setup',
-                              icon: Icons.tune_rounded,
-                              onTap: () => context.push('/setup'),
-                            ),
-                          ),
-                        ],
-                      ),
 
                       const SizedBox(height: 20),
 
@@ -260,50 +192,6 @@ class HomeScreen extends ConsumerWidget {
                 );
               },
             ),
-          ),
-        ],
-      ),
-      floatingActionButton: isSetup
-          ? FloatingActionButton(
-              onPressed: () => context.push('/add-expense'),
-              tooltip: 'Add Expense',
-              child: const Icon(Icons.add_rounded, size: 28),
-            )
-          : null,
-    );
-  }
-}
-
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GradientCard(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-      onTap: onTap,
-      child: Column(
-        children: [
-          Icon(icon, color: AppColors.hotPink, size: 22),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: AppTextStyles.caption.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: 11,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
     );
   }
 }
