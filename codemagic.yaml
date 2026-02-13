@@ -17,13 +17,50 @@ workflows:
             --create
           keychain initialize
           keychain add-certificates
-          xcode-project use-profiles
+
+          # Find the installed profile and get its UUID
+          PROFILE_PATH=$(find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" -print -quit 2>/dev/null)
+          if [ -z "$PROFILE_PATH" ]; then
+            echo "ERROR: No provisioning profiles found"
+            exit 1
+          fi
+          PROFILE_UUID=$(security cms -D -i "$PROFILE_PATH" | plutil -extract UUID raw -)
+          PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" | plutil -extract Name raw -)
+          echo "Using profile: $PROFILE_NAME ($PROFILE_UUID)"
+
+          # Set the provisioning profile in the Xcode project
+          cd $CM_BUILD_DIR/ios
+          /usr/libexec/PlistBuddy -c "Set :objects:97C147061CF9000F007C117D:buildSettings:PROVISIONING_PROFILE_SPECIFIER $PROFILE_NAME" Runner.xcodeproj/project.pbxproj 2>/dev/null || true
+          sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = com.kakeibo.kakeibostyle;/PRODUCT_BUNDLE_IDENTIFIER = com.kakeibo.kakeibostyle; PROVISIONING_PROFILE_SPECIFIER = \"$PROFILE_NAME\";/" Runner.xcodeproj/project.pbxproj 2>/dev/null || true
+      - name: Create export options
+        script: |
+          PROFILE_PATH=$(find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" -print -quit)
+          PROFILE_UUID=$(security cms -D -i "$PROFILE_PATH" | plutil -extract UUID raw -)
+          cat > /tmp/export_options.plist << PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store-connect</string>
+              <key>teamID</key>
+              <string>P8D9M6X786</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.kakeibo.kakeibostyle</key>
+                  <string>$PROFILE_UUID</string>
+              </dict>
+          </dict>
+          </plist>
+          PLIST
       - name: Get Flutter packages
         script: flutter pub get
       - name: Build IPA
         script: |
           flutter build ipa --release \
-            --export-options-plist=/Users/builder/export_options.plist
+            --export-options-plist=/tmp/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
