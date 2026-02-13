@@ -13,52 +13,21 @@ workflows:
       - name: Set up code signing
         script: |
           keychain initialize
-
-          # Install certificate from env var
           echo -n "$CM_CERTIFICATE" | base64 --decode > /tmp/certificate.p12
-          keychain add-certificates \
-            --certificate /tmp/certificate.p12
-
-          # Install provisioning profile
+          keychain add-certificates --certificate /tmp/certificate.p12
           echo -n "$CM_PROVISIONING_PROFILE" | base64 --decode > /tmp/profile.mobileprovision
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           PROFILE_UUID=$(security cms -D -i /tmp/profile.mobileprovision | plutil -extract UUID raw -)
-          PROFILE_NAME=$(security cms -D -i /tmp/profile.mobileprovision | plutil -extract Name raw -)
           cp /tmp/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/${PROFILE_UUID}.mobileprovision
-          echo "Installed profile: $PROFILE_NAME ($PROFILE_UUID)"
-
-          # Configure Xcode project for manual signing
+          echo "Installed profile UUID: $PROFILE_UUID"
           xcode-project use-profiles
-      - name: Create export options
-        script: |
-          PROFILE_UUID=$(security cms -D -i /tmp/profile.mobileprovision | plutil -extract UUID raw -)
-          cat > /tmp/export_options.plist << PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store-connect</string>
-              <key>teamID</key>
-              <string>P8D9M6X786</string>
-              <key>signingCertificate</key>
-              <string>Apple Distribution</string>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>com.kakeibo.kakeibostyle</key>
-                  <string>${PROFILE_UUID}</string>
-              </dict>
-          </dict>
-          </plist>
-          PLIST
+          # Write export options with no indentation
+          printf '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0">\n<dict>\n<key>method</key>\n<string>app-store-connect</string>\n<key>teamID</key>\n<string>P8D9M6X786</string>\n<key>signingCertificate</key>\n<string>Apple Distribution</string>\n<key>signingStyle</key>\n<string>manual</string>\n<key>provisioningProfiles</key>\n<dict>\n<key>com.kakeibo.kakeibostyle</key>\n<string>%s</string>\n</dict>\n</dict>\n</plist>' "$PROFILE_UUID" > /tmp/export_options.plist
+          cat /tmp/export_options.plist
       - name: Get Flutter packages
         script: flutter pub get
       - name: Build IPA
-        script: |
-          flutter build ipa --release \
-            --export-options-plist=/tmp/export_options.plist
+        script: flutter build ipa --release --export-options-plist=/tmp/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
