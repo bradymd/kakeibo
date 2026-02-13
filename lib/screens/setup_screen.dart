@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,7 +10,6 @@ import 'package:kakeibo/theme/app_colors.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
 import 'package:kakeibo/widgets/currency_input.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
-import 'package:kakeibo/widgets/sparkle_button.dart';
 
 class SetupScreen extends ConsumerStatefulWidget {
   const SetupScreen({super.key});
@@ -24,6 +22,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   final _savingsController = TextEditingController();
   final _incomeNameController = TextEditingController();
   final _incomeAmountController = TextEditingController();
+  bool _isEditingSavings = false;
+  bool _isAddingIncome = false;
 
   @override
   void initState() {
@@ -35,8 +35,14 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final monthAsync = ref.read(currentMonthProvider);
       monthAsync.whenData((month) {
-        if (month.savingsGoal > 0) {
-          _savingsController.text = month.savingsGoal.toStringAsFixed(2);
+        // Migrate legacy income: if income exists but no sources, create one
+        if (month.income > 0 && month.incomeSources.isEmpty) {
+          final monthId = ref.read(currentMonthIdProvider);
+          ref.read(kakeiboMonthsProvider.notifier).addIncomeSource(
+                monthId: monthId,
+                name: 'Income',
+                amount: month.income,
+              );
         }
       });
     });
@@ -81,7 +87,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (currentMonth) {
           final totalIncome = currentMonth.income;
-          final savings = double.tryParse(_savingsController.text) ?? 0;
+          final savings = _isEditingSavings
+              ? (double.tryParse(_savingsController.text) ?? 0)
+              : currentMonth.savingsGoal;
           final available = totalIncome - fixedTotal - savings;
 
           return ListView(
@@ -167,94 +175,166 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                     ],
 
                     // Add new income source
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: TextFormField(
-                            controller: _incomeNameController,
-                            decoration: const InputDecoration(
-                              hintText: 'e.g. Salary, Pension',
-                              isDense: true,
+                    if (_isAddingIncome)
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: TextFormField(
+                              controller: _incomeNameController,
+                              decoration: const InputDecoration(
+                                hintText: 'e.g. Salary, Pension',
+                                isDense: true,
+                              ),
+                              textCapitalization:
+                                  TextCapitalization.sentences,
+                              autofocus: true,
                             ),
-                            textCapitalization: TextCapitalization.sentences,
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          flex: 2,
-                          child: CurrencyInput(
-                            controller: _incomeAmountController,
-                            currencySymbol:
-                                CurrencyFormatter.symbol(currency: currency),
-                            hint: '0.00',
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 2,
+                            child: CurrencyInput(
+                              controller: _incomeAmountController,
+                              currencySymbol: CurrencyFormatter.symbol(
+                                  currency: currency),
+                              hint: '0.00',
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton.filled(
-                          onPressed: _canAddIncome
-                              ? () async {
-                                  await ref
-                                      .read(kakeiboMonthsProvider.notifier)
-                                      .addIncomeSource(
-                                        monthId: monthId,
-                                        name: _incomeNameController.text
-                                            .trim(),
-                                        amount: double.tryParse(
-                                                _incomeAmountController
-                                                    .text) ??
-                                            0,
-                                      );
-                                  _incomeNameController.clear();
-                                  _incomeAmountController.clear();
-                                  setState(() {});
-                                }
-                              : null,
-                          icon: const Icon(Icons.add_rounded, size: 20),
+                          const SizedBox(width: 8),
+                          IconButton.filled(
+                            onPressed: _canAddIncome
+                                ? () async {
+                                    await ref
+                                        .read(
+                                            kakeiboMonthsProvider.notifier)
+                                        .addIncomeSource(
+                                          monthId: monthId,
+                                          name: _incomeNameController.text
+                                              .trim(),
+                                          amount: double.tryParse(
+                                                  _incomeAmountController
+                                                      .text) ??
+                                              0,
+                                        );
+                                    _incomeNameController.clear();
+                                    _incomeAmountController.clear();
+                                    setState(
+                                        () => _isAddingIncome = false);
+                                  }
+                                : null,
+                            icon:
+                                const Icon(Icons.check_rounded, size: 20),
+                            style: IconButton.styleFrom(
+                              backgroundColor: AppColors.hotPink,
+                              disabledBackgroundColor:
+                                  Colors.grey.shade300,
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: IconButton.filled(
+                          onPressed: () =>
+                              setState(() => _isAddingIncome = true),
+                          icon: const Icon(Icons.add_rounded, size: 24),
                           style: IconButton.styleFrom(
                             backgroundColor: AppColors.hotPink,
-                            disabledBackgroundColor: Colors.grey.shade300,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
                   ],
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // Fixed expenses summary
-              if (fixedTotal > 0)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.softBlue,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.receipt_long_rounded,
-                          color: AppColors.vividPurple),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Fixed Costs',
-                                style: AppTextStyles.bodyBold),
-                            Text(fmt(fixedTotal),
-                                style: AppTextStyles.caption),
-                          ],
+              // Fixed expenses
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.softBlue,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.receipt_long_rounded,
+                            color: AppColors.vividPurple),
+                        const SizedBox(width: 8),
+                        Text('Fixed Costs',
+                            style: AppTextStyles.subheading),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: () =>
+                              context.push('/fixed-expenses'),
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: const Text('Add'),
+                        ),
+                      ],
+                    ),
+                    if (currentMonth.fixedExpenses.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      ...currentMonth.fixedExpenses.map((expense) =>
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    expense.name.isNotEmpty
+                                        ? expense.name
+                                        : expense.category,
+                                    style: AppTextStyles.body,
+                                  ),
+                                ),
+                                Text(fmt(expense.amount),
+                                    style: AppTextStyles.bodyBold),
+                                const SizedBox(width: 4),
+                                GestureDetector(
+                                  onTap: () {
+                                    ref
+                                        .read(kakeiboMonthsProvider
+                                            .notifier)
+                                        .deleteFixedExpense(expense.id);
+                                  },
+                                  child: const Icon(
+                                    Icons.delete_rounded,
+                                    color: AppColors.danger,
+                                    size: 20,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                      const Divider(height: 16),
+                      Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Total',
+                              style: AppTextStyles.bodyBold),
+                          Text(fmt(fixedTotal),
+                              style: AppTextStyles.bodyBold),
+                        ],
+                      ),
+                    ] else
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8),
+                        child: Text(
+                          'No fixed costs yet',
+                          style: AppTextStyles.caption,
                         ),
                       ),
-                      TextButton(
-                        onPressed: () => context.push('/fixed-expenses'),
-                        child: const Text('Edit'),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
+              ),
 
               const SizedBox(height: 16),
 
@@ -262,7 +342,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.softPurple,
+                  color: const Color(0xFFD1FAE5),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -270,50 +350,68 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                   children: [
                     Text(
                       'Q2: How much do you want to save?',
-                      style: AppTextStyles.subheading,
-                    ),
-                    Text(
-                      'Set your savings target for this month',
-                      style: AppTextStyles.caption,
-                    ),
-                    const SizedBox(height: 16),
-                    Center(
-                      child: Text(
-                        fmt(savings),
-                        style: AppTextStyles.currency.copyWith(
-                          color: AppColors.vividPurple,
-                        ),
+                      style: AppTextStyles.subheading.copyWith(
+                        color: AppColors.success,
                       ),
                     ),
-                    if (totalIncome - fixedTotal > 0)
-                      SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          activeTrackColor: AppColors.vividPurple,
-                          inactiveTrackColor: AppColors.vividPurple.withValues(alpha: 0.15),
-                          thumbColor: AppColors.vividPurple,
-                          overlayColor: AppColors.vividPurple.withValues(alpha: 0.12),
-                        ),
-                        child: Slider(
-                          value: savings.clamp(0, totalIncome - fixedTotal),
-                          min: 0,
-                          max: totalIncome - fixedTotal,
-                          divisions: max((totalIncome - fixedTotal).round(), 1),
-                          onChanged: (value) {
-                            _savingsController.text = value.roundToDouble().toStringAsFixed(2);
-                            setState(() {});
-                          },
-                        ),
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    const SizedBox(height: 12),
+                    if (_isEditingSavings)
+                      Row(
                         children: [
-                          Text(fmt(0), style: AppTextStyles.caption),
-                          Text(fmt(totalIncome - fixedTotal), style: AppTextStyles.caption),
+                          Expanded(
+                            child: CurrencyInput(
+                              controller: _savingsController,
+                              currencySymbol:
+                                  CurrencyFormatter.symbol(currency: currency),
+                              hint: '0.00',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.filled(
+                            onPressed: () async {
+                              await ref
+                                  .read(kakeiboMonthsProvider.notifier)
+                                  .setupMonth(
+                                    monthId: monthId,
+                                    income: totalIncome,
+                                    savingsGoal: savings,
+                                  );
+                              setState(() => _isEditingSavings = false);
+                            },
+                            icon: const Icon(Icons.check_rounded, size: 20),
+                            style: IconButton.styleFrom(
+                              backgroundColor: AppColors.success,
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Row(
+                        children: [
+                          const Icon(Icons.savings_rounded,
+                              color: AppColors.success),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              fmt(currentMonth.savingsGoal),
+                              style: AppTextStyles.currencySmall.copyWith(
+                                color: AppColors.success,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              _savingsController.text =
+                                  currentMonth.savingsGoal > 0
+                                      ? currentMonth.savingsGoal
+                                          .toStringAsFixed(2)
+                                      : '';
+                              setState(() => _isEditingSavings = true);
+                            },
+                            child: const Text('Edit'),
+                          ),
                         ],
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -326,7 +424,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                 decoration: BoxDecoration(
                   gradient: available >= 0
                       ? const LinearGradient(
-                          colors: [Color(0xFFECFDF5), Color(0xFFD1FAE5)])
+                          colors: [Color(0xFFEEF2FF), Color(0xFFE0E7FF)])
                       : const LinearGradient(
                           colors: [Color(0xFFFEF2F2), Color(0xFFFEE2E2)]),
                   borderRadius: BorderRadius.circular(16),
@@ -339,42 +437,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                       fmt(available),
                       style: AppTextStyles.currency.copyWith(
                         color: available >= 0
-                            ? AppColors.success
+                            ? const Color(0xFF818CF8)
                             : AppColors.danger,
                       ),
                     ),
-                    if (available > 0)
-                      Text(
-                        '${fmt(available / 4)} per pillar',
-                        style: AppTextStyles.caption,
-                      ),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 24),
-
-              SparkleButton(
-                label: 'Save Setup',
-                icon: Icons.check_rounded,
-                onPressed: totalIncome > 0
-                    ? () async {
-                        await ref
-                            .read(kakeiboMonthsProvider.notifier)
-                            .setupMonth(
-                              monthId: monthId,
-                              income: totalIncome,
-                              savingsGoal: savings,
-                            );
-                        if (context.mounted) {
-                          if (context.canPop()) {
-                            context.pop();
-                          } else {
-                            context.go('/');
-                          }
-                        }
-                      }
-                    : null,
               ),
             ],
           );

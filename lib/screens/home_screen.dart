@@ -35,8 +35,8 @@ class HomeScreen extends ConsumerWidget {
 
     return KakeiboScaffold(
       title: '家計簿 Kakeibo',
-      actions: [
-        MonthNavigator(
+      headerBottom: Center(
+        child: MonthNavigator(
           displayText: displayMonth,
           onPrevious: () {
             ref.read(currentMonthIdProvider.notifier).state =
@@ -47,7 +47,7 @@ class HomeScreen extends ConsumerWidget {
                 MonthHelpers.getNextMonthId(monthId);
           },
         ),
-      ],
+      ),
       floatingActionButton: isSetup
           ? FloatingActionButton(
               onPressed: () => context.push('/add-expense'),

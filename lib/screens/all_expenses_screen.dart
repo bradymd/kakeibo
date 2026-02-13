@@ -49,8 +49,8 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
           context.go('/');
         }
       },
-      actions: [
-        MonthNavigator(
+      headerBottom: Center(
+        child: MonthNavigator(
           displayText: displayMonth,
           onPrevious: () {
             ref.read(currentMonthIdProvider.notifier).state =
@@ -61,7 +61,7 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
                 MonthHelpers.getNextMonthId(monthId);
           },
         ),
-      ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/add-expense'),
         child: const Icon(Icons.add_rounded, size: 28),
