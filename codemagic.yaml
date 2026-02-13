@@ -20,9 +20,18 @@ workflows:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           PROFILE_UUID=$(security cms -D -i /tmp/profile.mobileprovision | plutil -extract UUID raw -)
           cp /tmp/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/${PROFILE_UUID}.mobileprovision
+      - name: Set Xcode signing to manual
+        script: |
+          cd ios
+          xcodebuild -project Runner.xcodeproj \
+            -scheme Runner \
+            -showBuildSettings > /dev/null 2>&1 || true
+          # Override signing settings in pbxproj
+          sed -i '' 's/CODE_SIGN_STYLE = Automatic/CODE_SIGN_STYLE = Manual/g' Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/"iPhone Developer"/"Apple Distribution"/g' Runner.xcodeproj/project.pbxproj
       - name: Create export options
         script: |
-          cat > /tmp/export_options.plist <<PLIST
+          cat > /tmp/export_options.plist << 'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
