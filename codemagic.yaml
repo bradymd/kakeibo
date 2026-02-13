@@ -12,30 +12,26 @@ workflows:
     scripts:
       - name: Set up code signing
         script: |
-          app-store-connect fetch-signing-files "com.kakeibo.kakeibostyle" \
-            --type IOS_APP_STORE \
-            --create
           keychain initialize
-          keychain add-certificates
 
-          # Find the installed profile and get its UUID
-          PROFILE_PATH=$(find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" -print -quit 2>/dev/null)
-          if [ -z "$PROFILE_PATH" ]; then
-            echo "ERROR: No provisioning profiles found"
-            exit 1
-          fi
-          PROFILE_UUID=$(security cms -D -i "$PROFILE_PATH" | plutil -extract UUID raw -)
-          PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" | plutil -extract Name raw -)
-          echo "Using profile: $PROFILE_NAME ($PROFILE_UUID)"
+          # Install certificate from env var
+          echo -n "$CM_CERTIFICATE" | base64 --decode > /tmp/certificate.p12
+          keychain add-certificates \
+            --certificate /tmp/certificate.p12
 
-          # Set the provisioning profile in the Xcode project
-          cd $CM_BUILD_DIR/ios
-          /usr/libexec/PlistBuddy -c "Set :objects:97C147061CF9000F007C117D:buildSettings:PROVISIONING_PROFILE_SPECIFIER $PROFILE_NAME" Runner.xcodeproj/project.pbxproj 2>/dev/null || true
-          sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = com.kakeibo.kakeibostyle;/PRODUCT_BUNDLE_IDENTIFIER = com.kakeibo.kakeibostyle; PROVISIONING_PROFILE_SPECIFIER = \"$PROFILE_NAME\";/" Runner.xcodeproj/project.pbxproj 2>/dev/null || true
+          # Install provisioning profile
+          echo -n "$CM_PROVISIONING_PROFILE" | base64 --decode > /tmp/profile.mobileprovision
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          PROFILE_UUID=$(security cms -D -i /tmp/profile.mobileprovision | plutil -extract UUID raw -)
+          PROFILE_NAME=$(security cms -D -i /tmp/profile.mobileprovision | plutil -extract Name raw -)
+          cp /tmp/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/${PROFILE_UUID}.mobileprovision
+          echo "Installed profile: $PROFILE_NAME ($PROFILE_UUID)"
+
+          # Configure Xcode project for manual signing
+          xcode-project use-profiles
       - name: Create export options
         script: |
-          PROFILE_PATH=$(find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" -print -quit)
-          PROFILE_UUID=$(security cms -D -i "$PROFILE_PATH" | plutil -extract UUID raw -)
+          PROFILE_UUID=$(security cms -D -i /tmp/profile.mobileprovision | plutil -extract UUID raw -)
           cat > /tmp/export_options.plist << PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -50,7 +46,7 @@ workflows:
               <key>provisioningProfiles</key>
               <dict>
                   <key>com.kakeibo.kakeibostyle</key>
-                  <string>$PROFILE_UUID</string>
+                  <string>${PROFILE_UUID}</string>
               </dict>
           </dict>
           </plist>
