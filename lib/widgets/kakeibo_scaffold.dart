@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kakeibo/theme/app_gradients.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
-import 'package:kakeibo/widgets/cherry_blossom_decoration.dart';
 import 'package:kakeibo/widgets/kakeibo_menu_button.dart';
 
 class KakeiboScaffold extends StatelessWidget {
@@ -39,53 +38,47 @@ class KakeiboScaffold extends StatelessWidget {
             ),
             child: SafeArea(
               bottom: false,
-              child: Stack(
-                children: [
-                  const Positioned.fill(
-                    child: CherryBlossomDecoration(opacity: 0.08),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    child: Column(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            if (showBackButton)
-                              IconButton(
-                                icon: const Icon(Icons.arrow_back_rounded,
-                                    color: Colors.white),
-                                onPressed: onBack ?? () => Navigator.of(context).pop(),
+                        if (showBackButton)
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back_rounded,
+                                color: Colors.white),
+                            onPressed: onBack ?? () => Navigator.of(context).pop(),
+                          ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: AppTextStyles.heading
+                                    .copyWith(color: Colors.white),
                               ),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    title,
-                                    style: AppTextStyles.heading
-                                        .copyWith(color: Colors.white),
-                                  ),
-                                  if (subtitle != null)
-                                    Text(
-                                      subtitle!,
-                                      style: AppTextStyles.caption
-                                          .copyWith(color: Colors.white70),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            if (actions != null) ...actions!,
-                            if (showMenuButton) const KakeiboMenuButton(),
-                          ],
+                              if (subtitle != null)
+                                Text(
+                                  subtitle!,
+                                  style: AppTextStyles.caption
+                                      .copyWith(color: Colors.white70),
+                                ),
+                            ],
+                          ),
                         ),
-                        if (headerBottom != null) ...[
-                          const SizedBox(height: 12),
-                          headerBottom!,
-                        ],
+                        if (actions != null) ...actions!,
+                        if (showMenuButton) const KakeiboMenuButton(),
                       ],
                     ),
-                  ),
-                ],
+                    if (headerBottom != null) ...[
+                      const SizedBox(height: 12),
+                      headerBottom!,
+                    ],
+                  ],
+                ),
               ),
             ),
           ),
