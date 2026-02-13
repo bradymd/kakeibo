@@ -41,6 +41,8 @@ workflows:
               <string>app-store-connect</string>
               <key>teamID</key>
               <string>P8D9M6X786</string>
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
               <key>signingStyle</key>
               <string>manual</string>
               <key>provisioningProfiles</key>
