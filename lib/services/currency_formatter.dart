@@ -17,39 +17,35 @@ class CurrencyFormatter {
   }
 
   static String _currencySymbol(String currency) {
-    switch (currency.toUpperCase()) {
-      case 'GBP':
-        return '£';
-      case 'USD':
-        return '\$';
-      case 'EUR':
-        return '€';
-      case 'JPY':
-        return '¥';
-      case 'KRW':
-        return '₩';
-      case 'CNY':
-        return '¥';
-      case 'INR':
-        return '₹';
-      case 'AUD':
-        return 'A\$';
-      case 'CAD':
-        return 'C\$';
-      default:
-        return currency;
+    for (final (code, _, symbol) in supportedCurrencies) {
+      if (code == currency.toUpperCase()) return symbol;
     }
+    return currency;
   }
 
+  /// Ordered roughly by global popularity / likely user base.
   static const supportedCurrencies = [
     ('GBP', 'British Pound', '£'),
     ('USD', 'US Dollar', '\$'),
     ('EUR', 'Euro', '€'),
     ('JPY', 'Japanese Yen', '¥'),
-    ('KRW', 'Korean Won', '₩'),
     ('CNY', 'Chinese Yuan', '¥'),
     ('INR', 'Indian Rupee', '₹'),
+    ('KRW', 'Korean Won', '₩'),
     ('AUD', 'Australian Dollar', 'A\$'),
     ('CAD', 'Canadian Dollar', 'C\$'),
+    ('BRL', 'Brazilian Real', 'R\$'),
+    ('SEK', 'Swedish Krona', 'kr'),
+    ('NOK', 'Norwegian Krone', 'kr'),
+    ('DKK', 'Danish Krone', 'kr'),
+    ('NZD', 'New Zealand Dollar', 'NZ\$'),
+    ('CHF', 'Swiss Franc', 'CHF'),
+    ('SGD', 'Singapore Dollar', 'S\$'),
+    ('HKD', 'Hong Kong Dollar', 'HK\$'),
+    ('MXN', 'Mexican Peso', 'MX\$'),
+    ('ZAR', 'South African Rand', 'R'),
+    ('THB', 'Thai Baht', '฿'),
+    ('PLN', 'Polish Zloty', 'zł'),
+    ('TRY', 'Turkish Lira', '₺'),
   ];
 }

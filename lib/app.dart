@@ -10,6 +10,8 @@ import 'package:kakeibo/screens/import_screen.dart';
 import 'package:kakeibo/screens/income_screen.dart';
 import 'package:kakeibo/screens/home_screen.dart';
 import 'package:kakeibo/screens/reflection_screen.dart';
+import 'package:kakeibo/screens/rename_categories_screen.dart';
+import 'package:kakeibo/screens/search_screen.dart';
 import 'package:kakeibo/screens/settings_screen.dart';
 import 'package:kakeibo/screens/setup_screen.dart';
 import 'package:kakeibo/services/swipe_nav.dart';
@@ -42,6 +44,14 @@ final _router = GoRouter(
     GoRoute(
       path: '/about',
       builder: (context, state) => const AboutScreen(),
+    ),
+    GoRoute(
+      path: '/rename-categories',
+      builder: (context, state) => const RenameCategoriesScreen(),
+    ),
+    GoRoute(
+      path: '/search',
+      builder: (context, state) => const SearchScreen(),
     ),
     GoRoute(
       path: '/setup',

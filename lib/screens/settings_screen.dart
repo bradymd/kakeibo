@@ -6,6 +6,7 @@ import 'package:kakeibo/services/currency_formatter.dart';
 import 'package:kakeibo/theme/app_colors.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -17,7 +18,7 @@ class SettingsScreen extends ConsumerWidget {
         settings.whenOrNull(data: (s) => s.currency) ?? 'GBP';
 
     return KakeiboScaffold(
-      title: 'App Settings',
+      title: 'Settings and Tools',
       showHomeButton: true,
       centerTitle: true,
       onBack: () => context.go('/'),
@@ -27,49 +28,74 @@ class SettingsScreen extends ConsumerWidget {
               // Currency picker
               Text('Currency', style: AppTextStyles.subheading),
               const SizedBox(height: 8),
-              ...CurrencyFormatter.supportedCurrencies.map((entry) {
-                final (code, name, symbol) = entry;
-                final isSelected = code == currency;
-                return ListTile(
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.hotPink.withValues(alpha: 0.1)
-                          : Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Center(
-                      child: Text(
-                        symbol,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: isSelected
-                              ? AppColors.hotPink
-                              : AppColors.textMuted,
-                        ),
+              DropdownButtonFormField<String>(
+                initialValue: currency,
+                decoration: InputDecoration(
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(left: 12, right: 8),
+                    child: Text(
+                      CurrencyFormatter.symbol(currency: currency),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.hotPink,
                       ),
                     ),
                   ),
-                  title: Text(code, style: AppTextStyles.bodyBold),
-                  subtitle: Text(name, style: AppTextStyles.caption),
-                  trailing: isSelected
-                      ? const Icon(Icons.check_circle_rounded,
-                          color: AppColors.hotPink)
-                      : null,
-                  tileColor: isSelected
-                      ? AppColors.hotPink.withValues(alpha: 0.05)
-                      : null,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  prefixIconConstraints: const BoxConstraints(
+                    minWidth: 0,
+                    minHeight: 0,
                   ),
-                  onTap: () {
+                ),
+                items: CurrencyFormatter.supportedCurrencies.map((entry) {
+                  final (code, name, symbol) = entry;
+                  return DropdownMenuItem(
+                    value: code,
+                    child: Text('$symbol  $code – $name'),
+                  );
+                }).toList(),
+                onChanged: (code) {
+                  if (code != null) {
                     ref.read(settingsProvider.notifier).setCurrency(code);
-                  },
-                );
-              }),
+                  }
+                },
+              ),
+
+              const SizedBox(height: 24),
+
+              // Tools
+              Text('Tools', style: AppTextStyles.subheading),
+              const SizedBox(height: 4),
+              ListTile(
+                dense: true,
+                visualDensity: VisualDensity.compact,
+                leading: const Icon(Icons.search_rounded,
+                    color: AppColors.hotPink, size: 20),
+                title: Text('Search', style: AppTextStyles.bodyBold),
+                subtitle: Text('Find expenses, fixed costs and income',
+                    style: AppTextStyles.caption),
+                trailing: const Icon(Icons.chevron_right_rounded,
+                    size: 18, color: AppColors.textMuted),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                onTap: () => context.push('/search'),
+              ),
+              ListTile(
+                dense: true,
+                visualDensity: VisualDensity.compact,
+                leading: const Icon(Icons.edit_rounded,
+                    color: AppColors.vividPurple, size: 20),
+                title: Text('Rename Categories', style: AppTextStyles.bodyBold),
+                subtitle: Text('Bulk-rename fixed cost categories',
+                    style: AppTextStyles.caption),
+                trailing: const Icon(Icons.chevron_right_rounded,
+                    size: 18, color: AppColors.textMuted),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                onTap: () => context.push('/rename-categories'),
+              ),
 
               const SizedBox(height: 24),
 
@@ -91,11 +117,20 @@ class SettingsScreen extends ConsumerWidget {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'Version 1.0.0',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textMuted,
-                      ),
+                    FutureBuilder<PackageInfo>(
+                      future: PackageInfo.fromPlatform(),
+                      builder: (context, snapshot) {
+                        final info = snapshot.data;
+                        final version = info != null
+                            ? 'Version ${info.version} (${info.buildNumber})'
+                            : '';
+                        return Text(
+                          version,
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textMuted,
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

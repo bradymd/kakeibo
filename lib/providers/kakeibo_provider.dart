@@ -169,6 +169,18 @@ class KakeiboMonthsNotifier extends AsyncNotifier<List<KakeiboMonth>> {
     }
   }
 
+  Future<void> renameFixedExpenseCategory(
+      String oldName, String newName) async {
+    final db = ref.read(databaseProvider);
+    await db.renameFixedExpenseCategory(oldName, newName);
+    ref.invalidateSelf();
+  }
+
+  Future<List<String>> getAllFixedExpenseCategories() async {
+    final db = ref.read(databaseProvider);
+    return db.getAllFixedExpenseCategories();
+  }
+
   Future<void> saveReflection({
     required String monthId,
     required Reflection reflection,

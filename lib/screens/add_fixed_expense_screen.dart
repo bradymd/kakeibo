@@ -8,19 +8,8 @@ import 'package:kakeibo/services/currency_formatter.dart';
 import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/widgets/currency_input.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
+import 'package:kakeibo/constants/fixed_expense_categories.dart';
 import 'package:kakeibo/widgets/sparkle_button.dart';
-
-/// Built-in categories that always appear.
-const _defaultCategories = [
-  'Housing',
-  'Utilities',
-  'Insurance',
-  'Subscriptions',
-  'Debt Payments',
-  'Transport',
-  'Childcare',
-  'Other',
-];
 
 String _normalise(String raw) {
   final trimmed = raw.trim();
@@ -84,13 +73,13 @@ class _AddFixedExpenseScreenState
 
   List<String> _allCategories(List<String> usedCategories) {
     final merged = <String>{
-      ..._defaultCategories,
+      ...defaultFixedExpenseCategories,
       ...usedCategories,
       ..._sessionCategories,
     };
-    final custom = merged.difference(_defaultCategories.toSet()).toList()
+    final custom = merged.difference(defaultFixedExpenseCategories.toSet()).toList()
       ..sort();
-    return [..._defaultCategories, ...custom];
+    return [...defaultFixedExpenseCategories, ...custom];
   }
 
   @override

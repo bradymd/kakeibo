@@ -257,6 +257,104 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  // --- Search operations ---
+
+  Future<List<ExpenseSearchResult>> searchExpenses(String term) async {
+    final pattern = '%$term%';
+    final query = select(expenses).join([
+      innerJoin(kakeiboMonths, kakeiboMonths.id.equalsExp(expenses.monthId)),
+    ])
+      ..where(expenses.description.like(pattern) |
+          expenses.notes.like(pattern) |
+          expenses.pillar.like(pattern));
+    final rows = await query.get();
+    return rows.map((row) {
+      final exp = row.readTable(expenses);
+      final month = row.readTable(kakeiboMonths);
+      return ExpenseSearchResult(
+        expense: _expenseFromRow(exp),
+        monthId: exp.monthId,
+        year: month.year,
+        month: month.month,
+      );
+    }).toList();
+  }
+
+  Future<List<FixedExpenseSearchResult>> searchFixedExpenses(
+      String term) async {
+    final pattern = '%$term%';
+    final query = select(fixedExpenses).join([
+      innerJoin(
+          kakeiboMonths, kakeiboMonths.id.equalsExp(fixedExpenses.monthId)),
+    ])
+      ..where(fixedExpenses.name.like(pattern) |
+          fixedExpenses.category.like(pattern));
+    final rows = await query.get();
+    return rows.map((row) {
+      final fixed = row.readTable(fixedExpenses);
+      final month = row.readTable(kakeiboMonths);
+      return FixedExpenseSearchResult(
+        fixedExpense: _fixedFromRow(fixed),
+        monthId: fixed.monthId,
+        year: month.year,
+        month: month.month,
+      );
+    }).toList();
+  }
+
+  Future<List<IncomeSearchResult>> searchIncomeSources(String term) async {
+    final pattern = '%$term%';
+    final query = select(incomeSources).join([
+      innerJoin(
+          kakeiboMonths, kakeiboMonths.id.equalsExp(incomeSources.monthId)),
+    ])
+      ..where(incomeSources.name.like(pattern));
+    final rows = await query.get();
+    return rows.map((row) {
+      final src = row.readTable(incomeSources);
+      final month = row.readTable(kakeiboMonths);
+      return IncomeSearchResult(
+        incomeSource:
+            models.IncomeSource(id: src.id, name: src.name, amount: src.amount),
+        monthId: src.monthId,
+        year: month.year,
+        month: month.month,
+      );
+    }).toList();
+  }
+
+  // --- Fixed expense category operations ---
+
+  Future<List<String>> getAllFixedExpenseCategories() async {
+    final query = selectOnly(fixedExpenses, distinct: true)
+      ..addColumns([fixedExpenses.category])
+      ..orderBy([OrderingTerm.asc(fixedExpenses.category)]);
+    final rows = await query.get();
+    final normalised = rows.map((row) {
+      final cat = row.read(fixedExpenses.category) ?? 'Other';
+      // Normalise old enum-style lowercase categories
+      return cat.isNotEmpty
+          ? cat[0].toUpperCase() + cat.substring(1)
+          : 'Other';
+    }).toSet().toList()
+      ..sort();
+    return normalised;
+  }
+
+  Future<void> renameFixedExpenseCategory(
+      String oldName, String newName) async {
+    await (update(fixedExpenses)
+          ..where((t) => t.category.equals(oldName)))
+        .write(FixedExpensesCompanion(category: Value(newName)));
+    // Also handle old lowercase variant
+    final oldLower = oldName[0].toLowerCase() + oldName.substring(1);
+    if (oldLower != oldName) {
+      await (update(fixedExpenses)
+            ..where((t) => t.category.equals(oldLower)))
+          .write(FixedExpensesCompanion(category: Value(newName)));
+    }
+  }
+
   // --- Helpers ---
 
   models.KakeiboMonth _monthFromRow(
@@ -313,6 +411,45 @@ class AppDatabase extends _$AppDatabase {
       dueDay: row.dueDay,
     );
   }
+}
+
+class ExpenseSearchResult {
+  final models.KakeiboExpense expense;
+  final String monthId;
+  final int year;
+  final int month;
+  const ExpenseSearchResult({
+    required this.expense,
+    required this.monthId,
+    required this.year,
+    required this.month,
+  });
+}
+
+class FixedExpenseSearchResult {
+  final models.FixedExpense fixedExpense;
+  final String monthId;
+  final int year;
+  final int month;
+  const FixedExpenseSearchResult({
+    required this.fixedExpense,
+    required this.monthId,
+    required this.year,
+    required this.month,
+  });
+}
+
+class IncomeSearchResult {
+  final models.IncomeSource incomeSource;
+  final String monthId;
+  final int year;
+  final int month;
+  const IncomeSearchResult({
+    required this.incomeSource,
+    required this.monthId,
+    required this.year,
+    required this.month,
+  });
 }
 
 LazyDatabase _openConnection() {
