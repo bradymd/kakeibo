@@ -15,6 +15,7 @@ import 'package:kakeibo/widgets/budget_bar.dart';
 import 'package:kakeibo/widgets/gradient_card.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
 import 'package:kakeibo/widgets/month_navigator.dart';
+import 'package:kakeibo/services/swipe_nav.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -59,11 +60,11 @@ class HomeScreen extends ConsumerWidget {
         onHorizontalDragEnd: (details) {
           final velocity = details.primaryVelocity ?? 0;
           if (velocity > 300) {
-            // Swipe right → Expenses
-            context.go('/expenses');
+            // Swipe right → Expenses (slides in from left)
+            SwipeNav.go(context, '/expenses', SlideDirection.left);
           } else if (velocity < -300) {
-            // Swipe left → Fixed Costs
-            context.go('/fixed-expenses');
+            // Swipe left → Fixed Costs (slides in from right)
+            SwipeNav.go(context, '/fixed-expenses', SlideDirection.right);
           }
         },
         behavior: HitTestBehavior.translucent,

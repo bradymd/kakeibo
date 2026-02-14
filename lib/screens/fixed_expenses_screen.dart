@@ -9,6 +9,7 @@ import 'package:kakeibo/services/currency_formatter.dart';
 import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/theme/app_colors.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
+import 'package:kakeibo/services/swipe_nav.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
 
 class FixedExpensesScreen extends ConsumerWidget {
@@ -40,7 +41,16 @@ class FixedExpensesScreen extends ConsumerWidget {
         backgroundColor: AppColors.hotPink,
         child: const Icon(Icons.add_rounded, color: Colors.white),
       ),
-      body: monthAsync.when(
+      body: GestureDetector(
+        onHorizontalDragEnd: (details) {
+          final velocity = details.primaryVelocity ?? 0;
+          if (velocity > 300) {
+            // Swipe right → back to Home (slides in from left)
+            SwipeNav.go(context, '/', SlideDirection.left);
+          }
+        },
+        behavior: HitTestBehavior.translucent,
+        child: monthAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (currentMonth) {
@@ -174,6 +184,7 @@ class FixedExpensesScreen extends ConsumerWidget {
             ],
           );
         },
+      ),
       ),
     );
   }

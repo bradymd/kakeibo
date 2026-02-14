@@ -9,7 +9,8 @@ enum _MenuRoute {
   fixedCosts('/fixed-expenses', 'Fixed Costs', Icons.account_balance_rounded),
   setup('/setup', 'Start of Month', Icons.play_arrow_rounded),
   reflection('/reflection', 'End of Month', Icons.self_improvement_rounded),
-  settings('/settings', 'App Settings', Icons.settings_rounded);
+  settings('/settings', 'App Settings', Icons.settings_rounded),
+  about('/about', 'About Kakeibo', Icons.info_outline_rounded);
 
   const _MenuRoute(this.path, this.label, this.icon);
   final String path;

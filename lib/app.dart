@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kakeibo/screens/add_expense_screen.dart';
 import 'package:kakeibo/screens/all_expenses_screen.dart';
+import 'package:kakeibo/screens/about_screen.dart';
 import 'package:kakeibo/screens/add_fixed_expense_screen.dart';
 import 'package:kakeibo/screens/add_income_screen.dart';
 import 'package:kakeibo/screens/fixed_expenses_screen.dart';
@@ -11,6 +12,7 @@ import 'package:kakeibo/screens/home_screen.dart';
 import 'package:kakeibo/screens/reflection_screen.dart';
 import 'package:kakeibo/screens/settings_screen.dart';
 import 'package:kakeibo/screens/setup_screen.dart';
+import 'package:kakeibo/services/swipe_nav.dart';
 import 'package:kakeibo/theme/app_theme.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -21,15 +23,25 @@ final _router = GoRouter(
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const HomeScreen(),
+      pageBuilder: (context, state) => SwipeNav.slidePage(
+        state: state,
+        child: const HomeScreen(),
+      ),
     ),
     GoRoute(
       path: '/expenses',
-      builder: (context, state) => const AllExpensesScreen(),
+      pageBuilder: (context, state) => SwipeNav.slidePage(
+        state: state,
+        child: const AllExpensesScreen(),
+      ),
     ),
     GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),
+    ),
+    GoRoute(
+      path: '/about',
+      builder: (context, state) => const AboutScreen(),
     ),
     GoRoute(
       path: '/setup',
@@ -37,7 +49,10 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/fixed-expenses',
-      builder: (context, state) => const FixedExpensesScreen(),
+      pageBuilder: (context, state) => SwipeNav.slidePage(
+        state: state,
+        child: const FixedExpensesScreen(),
+      ),
     ),
     GoRoute(
       path: '/reflection',

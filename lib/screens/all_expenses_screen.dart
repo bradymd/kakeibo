@@ -12,6 +12,7 @@ import 'package:kakeibo/theme/app_colors.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
 import 'package:kakeibo/widgets/empty_state.dart';
 import 'package:kakeibo/widgets/expense_tile.dart';
+import 'package:kakeibo/services/swipe_nav.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
 import 'package:kakeibo/widgets/month_navigator.dart';
 
@@ -64,7 +65,16 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
         onPressed: () => context.push('/add-expense'),
         child: const Icon(Icons.add_rounded, size: 28),
       ),
-      body: monthAsync.when(
+      body: GestureDetector(
+        onHorizontalDragEnd: (details) {
+          final velocity = details.primaryVelocity ?? 0;
+          if (velocity < -300) {
+            // Swipe left → back to Home (slides in from right)
+            SwipeNav.go(context, '/', SlideDirection.right);
+          }
+        },
+        behavior: HitTestBehavior.translucent,
+        child: monthAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (currentMonth) {
@@ -168,6 +178,7 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
         ],
       );
         },
+      ),
       ),
     );
   }

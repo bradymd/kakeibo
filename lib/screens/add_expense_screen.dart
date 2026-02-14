@@ -131,7 +131,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           const SizedBox(height: 20),
 
           // Pillar selector
-          Text('Pillar', style: AppTextStyles.label),
+          Text('Please assign this expense to one of the four pillars',
+              style: AppTextStyles.bodyBold),
           const SizedBox(height: 8),
           PillarSelector(
             selected: _selectedPillar,
