@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:kakeibo/models/pillar.dart';
 import 'package:kakeibo/providers/kakeibo_provider.dart';
 import 'package:kakeibo/providers/month_calculations_provider.dart';
@@ -8,6 +9,7 @@ import 'package:kakeibo/providers/settings_provider.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
 import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/theme/app_colors.dart';
+import 'package:kakeibo/theme/app_text_styles.dart';
 import 'package:kakeibo/widgets/empty_state.dart';
 import 'package:kakeibo/widgets/expense_tile.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
@@ -38,17 +40,13 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
     String fmt(double amount) =>
         CurrencyFormatter.format(amount, currency: currency);
 
+    final monthName = DateFormat('MMMM').format(DateTime(year, month));
+
     return KakeiboScaffold(
       title: 'Expenses',
-      subtitle: 'Total: ${fmt(totalSpent)}',
-      showBackButton: true,
-      onBack: () {
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go('/');
-        }
-      },
+      showHomeButton: true,
+      centerTitle: true,
+      onBack: () => context.go('/'),
       headerBottom: Center(
         child: MonthNavigator(
           displayText: displayMonth,
@@ -66,8 +64,33 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
         onPressed: () => context.push('/add-expense'),
         child: const Icon(Icons.add_rounded, size: 28),
       ),
-      body: Column(
-        children: [
+      body: monthAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error: $e')),
+        data: (currentMonth) {
+          final verb = currentMonth.reflection.completed ? 'were' : 'are';
+
+          return Column(
+            children: [
+              // Total statement panel
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.hotPink.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Your total expenses for $monthName $verb ${fmt(totalSpent)}',
+                    style: AppTextStyles.subheading.copyWith(
+                      color: AppColors.hotPink,
+                    ),
+                  ),
+                ),
+              ),
+
           // Pillar filter chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -102,11 +125,7 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
 
           // Expense list
           Expanded(
-            child: monthAsync.when(
-              loading: () => const Center(
-                  child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
-              data: (currentMonth) {
+            child: () {
                 var expenses = [...currentMonth.expenses]
                   ..sort((a, b) => b.date.compareTo(a.date));
 
@@ -144,10 +163,11 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
                     );
                   },
                 );
-              },
-            ),
+              }(),
           ),
         ],
+      );
+        },
       ),
     );
   }

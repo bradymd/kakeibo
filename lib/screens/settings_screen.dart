@@ -18,14 +18,9 @@ class SettingsScreen extends ConsumerWidget {
 
     return KakeiboScaffold(
       title: 'App Settings',
-      showBackButton: true,
-      onBack: () {
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go('/');
-        }
-      },
+      showHomeButton: true,
+      centerTitle: true,
+      onBack: () => context.go('/'),
       body: ListView(
             padding: const EdgeInsets.all(20),
             children: [

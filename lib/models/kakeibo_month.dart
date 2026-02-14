@@ -56,6 +56,7 @@ class FixedExpense with _$FixedExpense {
     required String name,
     required double amount,
     @Default('Other') String category,
+    int? dueDay,
   }) = _FixedExpense;
 
   factory FixedExpense.fromJson(Map<String, dynamic> json) =>

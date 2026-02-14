@@ -925,8 +925,24 @@ class $FixedExpensesTable extends FixedExpenses
     requiredDuringInsert: false,
     defaultValue: const Constant('other'),
   );
+  static const VerificationMeta _dueDayMeta = const VerificationMeta('dueDay');
   @override
-  List<GeneratedColumn> get $columns => [id, monthId, name, amount, category];
+  late final GeneratedColumn<int> dueDay = GeneratedColumn<int>(
+    'due_day',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    monthId,
+    name,
+    amount,
+    category,
+    dueDay,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -974,6 +990,12 @@ class $FixedExpensesTable extends FixedExpenses
         category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
       );
     }
+    if (data.containsKey('due_day')) {
+      context.handle(
+        _dueDayMeta,
+        dueDay.isAcceptableOrUnknown(data['due_day']!, _dueDayMeta),
+      );
+    }
     return context;
   }
 
@@ -1003,6 +1025,10 @@ class $FixedExpensesTable extends FixedExpenses
         DriftSqlType.string,
         data['${effectivePrefix}category'],
       )!,
+      dueDay: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}due_day'],
+      ),
     );
   }
 
@@ -1018,12 +1044,14 @@ class FixedExpenseRow extends DataClass implements Insertable<FixedExpenseRow> {
   final String name;
   final double amount;
   final String category;
+  final int? dueDay;
   const FixedExpenseRow({
     required this.id,
     required this.monthId,
     required this.name,
     required this.amount,
     required this.category,
+    this.dueDay,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1033,6 +1061,9 @@ class FixedExpenseRow extends DataClass implements Insertable<FixedExpenseRow> {
     map['name'] = Variable<String>(name);
     map['amount'] = Variable<double>(amount);
     map['category'] = Variable<String>(category);
+    if (!nullToAbsent || dueDay != null) {
+      map['due_day'] = Variable<int>(dueDay);
+    }
     return map;
   }
 
@@ -1043,6 +1074,9 @@ class FixedExpenseRow extends DataClass implements Insertable<FixedExpenseRow> {
       name: Value(name),
       amount: Value(amount),
       category: Value(category),
+      dueDay: dueDay == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dueDay),
     );
   }
 
@@ -1057,6 +1091,7 @@ class FixedExpenseRow extends DataClass implements Insertable<FixedExpenseRow> {
       name: serializer.fromJson<String>(json['name']),
       amount: serializer.fromJson<double>(json['amount']),
       category: serializer.fromJson<String>(json['category']),
+      dueDay: serializer.fromJson<int?>(json['dueDay']),
     );
   }
   @override
@@ -1068,6 +1103,7 @@ class FixedExpenseRow extends DataClass implements Insertable<FixedExpenseRow> {
       'name': serializer.toJson<String>(name),
       'amount': serializer.toJson<double>(amount),
       'category': serializer.toJson<String>(category),
+      'dueDay': serializer.toJson<int?>(dueDay),
     };
   }
 
@@ -1077,12 +1113,14 @@ class FixedExpenseRow extends DataClass implements Insertable<FixedExpenseRow> {
     String? name,
     double? amount,
     String? category,
+    Value<int?> dueDay = const Value.absent(),
   }) => FixedExpenseRow(
     id: id ?? this.id,
     monthId: monthId ?? this.monthId,
     name: name ?? this.name,
     amount: amount ?? this.amount,
     category: category ?? this.category,
+    dueDay: dueDay.present ? dueDay.value : this.dueDay,
   );
   FixedExpenseRow copyWithCompanion(FixedExpensesCompanion data) {
     return FixedExpenseRow(
@@ -1091,6 +1129,7 @@ class FixedExpenseRow extends DataClass implements Insertable<FixedExpenseRow> {
       name: data.name.present ? data.name.value : this.name,
       amount: data.amount.present ? data.amount.value : this.amount,
       category: data.category.present ? data.category.value : this.category,
+      dueDay: data.dueDay.present ? data.dueDay.value : this.dueDay,
     );
   }
 
@@ -1101,13 +1140,14 @@ class FixedExpenseRow extends DataClass implements Insertable<FixedExpenseRow> {
           ..write('monthId: $monthId, ')
           ..write('name: $name, ')
           ..write('amount: $amount, ')
-          ..write('category: $category')
+          ..write('category: $category, ')
+          ..write('dueDay: $dueDay')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, monthId, name, amount, category);
+  int get hashCode => Object.hash(id, monthId, name, amount, category, dueDay);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1116,7 +1156,8 @@ class FixedExpenseRow extends DataClass implements Insertable<FixedExpenseRow> {
           other.monthId == this.monthId &&
           other.name == this.name &&
           other.amount == this.amount &&
-          other.category == this.category);
+          other.category == this.category &&
+          other.dueDay == this.dueDay);
 }
 
 class FixedExpensesCompanion extends UpdateCompanion<FixedExpenseRow> {
@@ -1125,6 +1166,7 @@ class FixedExpensesCompanion extends UpdateCompanion<FixedExpenseRow> {
   final Value<String> name;
   final Value<double> amount;
   final Value<String> category;
+  final Value<int?> dueDay;
   final Value<int> rowid;
   const FixedExpensesCompanion({
     this.id = const Value.absent(),
@@ -1132,6 +1174,7 @@ class FixedExpensesCompanion extends UpdateCompanion<FixedExpenseRow> {
     this.name = const Value.absent(),
     this.amount = const Value.absent(),
     this.category = const Value.absent(),
+    this.dueDay = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   FixedExpensesCompanion.insert({
@@ -1140,6 +1183,7 @@ class FixedExpensesCompanion extends UpdateCompanion<FixedExpenseRow> {
     required String name,
     required double amount,
     this.category = const Value.absent(),
+    this.dueDay = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        monthId = Value(monthId),
@@ -1151,6 +1195,7 @@ class FixedExpensesCompanion extends UpdateCompanion<FixedExpenseRow> {
     Expression<String>? name,
     Expression<double>? amount,
     Expression<String>? category,
+    Expression<int>? dueDay,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1159,6 +1204,7 @@ class FixedExpensesCompanion extends UpdateCompanion<FixedExpenseRow> {
       if (name != null) 'name': name,
       if (amount != null) 'amount': amount,
       if (category != null) 'category': category,
+      if (dueDay != null) 'due_day': dueDay,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1169,6 +1215,7 @@ class FixedExpensesCompanion extends UpdateCompanion<FixedExpenseRow> {
     Value<String>? name,
     Value<double>? amount,
     Value<String>? category,
+    Value<int?>? dueDay,
     Value<int>? rowid,
   }) {
     return FixedExpensesCompanion(
@@ -1177,6 +1224,7 @@ class FixedExpensesCompanion extends UpdateCompanion<FixedExpenseRow> {
       name: name ?? this.name,
       amount: amount ?? this.amount,
       category: category ?? this.category,
+      dueDay: dueDay ?? this.dueDay,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1199,6 +1247,9 @@ class FixedExpensesCompanion extends UpdateCompanion<FixedExpenseRow> {
     if (category.present) {
       map['category'] = Variable<String>(category.value);
     }
+    if (dueDay.present) {
+      map['due_day'] = Variable<int>(dueDay.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1213,6 +1264,7 @@ class FixedExpensesCompanion extends UpdateCompanion<FixedExpenseRow> {
           ..write('name: $name, ')
           ..write('amount: $amount, ')
           ..write('category: $category, ')
+          ..write('dueDay: $dueDay, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2655,6 +2707,7 @@ typedef $$FixedExpensesTableCreateCompanionBuilder =
       required String name,
       required double amount,
       Value<String> category,
+      Value<int?> dueDay,
       Value<int> rowid,
     });
 typedef $$FixedExpensesTableUpdateCompanionBuilder =
@@ -2664,6 +2717,7 @@ typedef $$FixedExpensesTableUpdateCompanionBuilder =
       Value<String> name,
       Value<double> amount,
       Value<String> category,
+      Value<int?> dueDay,
       Value<int> rowid,
     });
 
@@ -2725,6 +2779,11 @@ class $$FixedExpensesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get dueDay => $composableBuilder(
+    column: $table.dueDay,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$KakeiboMonthsTableFilterComposer get monthId {
     final $$KakeiboMonthsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -2778,6 +2837,11 @@ class $$FixedExpensesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get dueDay => $composableBuilder(
+    column: $table.dueDay,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$KakeiboMonthsTableOrderingComposer get monthId {
     final $$KakeiboMonthsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -2822,6 +2886,9 @@ class $$FixedExpensesTableAnnotationComposer
 
   GeneratedColumn<String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<int> get dueDay =>
+      $composableBuilder(column: $table.dueDay, builder: (column) => column);
 
   $$KakeiboMonthsTableAnnotationComposer get monthId {
     final $$KakeiboMonthsTableAnnotationComposer composer = $composerBuilder(
@@ -2880,6 +2947,7 @@ class $$FixedExpensesTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<double> amount = const Value.absent(),
                 Value<String> category = const Value.absent(),
+                Value<int?> dueDay = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FixedExpensesCompanion(
                 id: id,
@@ -2887,6 +2955,7 @@ class $$FixedExpensesTableTableManager
                 name: name,
                 amount: amount,
                 category: category,
+                dueDay: dueDay,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2896,6 +2965,7 @@ class $$FixedExpensesTableTableManager
                 required String name,
                 required double amount,
                 Value<String> category = const Value.absent(),
+                Value<int?> dueDay = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FixedExpensesCompanion.insert(
                 id: id,
@@ -2903,6 +2973,7 @@ class $$FixedExpensesTableTableManager
                 name: name,
                 amount: amount,
                 category: category,
+                dueDay: dueDay,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

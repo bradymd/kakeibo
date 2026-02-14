@@ -864,6 +864,7 @@ mixin _$FixedExpense {
   String get name => throw _privateConstructorUsedError;
   double get amount => throw _privateConstructorUsedError;
   String get category => throw _privateConstructorUsedError;
+  int? get dueDay => throw _privateConstructorUsedError;
 
   /// Serializes this FixedExpense to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -882,7 +883,13 @@ abstract class $FixedExpenseCopyWith<$Res> {
     $Res Function(FixedExpense) then,
   ) = _$FixedExpenseCopyWithImpl<$Res, FixedExpense>;
   @useResult
-  $Res call({String id, String name, double amount, String category});
+  $Res call({
+    String id,
+    String name,
+    double amount,
+    String category,
+    int? dueDay,
+  });
 }
 
 /// @nodoc
@@ -904,6 +911,7 @@ class _$FixedExpenseCopyWithImpl<$Res, $Val extends FixedExpense>
     Object? name = null,
     Object? amount = null,
     Object? category = null,
+    Object? dueDay = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -923,6 +931,10 @@ class _$FixedExpenseCopyWithImpl<$Res, $Val extends FixedExpense>
                 ? _value.category
                 : category // ignore: cast_nullable_to_non_nullable
                       as String,
+            dueDay: freezed == dueDay
+                ? _value.dueDay
+                : dueDay // ignore: cast_nullable_to_non_nullable
+                      as int?,
           )
           as $Val,
     );
@@ -938,7 +950,13 @@ abstract class _$$FixedExpenseImplCopyWith<$Res>
   ) = __$$FixedExpenseImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String id, String name, double amount, String category});
+  $Res call({
+    String id,
+    String name,
+    double amount,
+    String category,
+    int? dueDay,
+  });
 }
 
 /// @nodoc
@@ -959,6 +977,7 @@ class __$$FixedExpenseImplCopyWithImpl<$Res>
     Object? name = null,
     Object? amount = null,
     Object? category = null,
+    Object? dueDay = freezed,
   }) {
     return _then(
       _$FixedExpenseImpl(
@@ -978,6 +997,10 @@ class __$$FixedExpenseImplCopyWithImpl<$Res>
             ? _value.category
             : category // ignore: cast_nullable_to_non_nullable
                   as String,
+        dueDay: freezed == dueDay
+            ? _value.dueDay
+            : dueDay // ignore: cast_nullable_to_non_nullable
+                  as int?,
       ),
     );
   }
@@ -991,6 +1014,7 @@ class _$FixedExpenseImpl implements _FixedExpense {
     required this.name,
     required this.amount,
     this.category = 'Other',
+    this.dueDay,
   });
 
   factory _$FixedExpenseImpl.fromJson(Map<String, dynamic> json) =>
@@ -1005,10 +1029,12 @@ class _$FixedExpenseImpl implements _FixedExpense {
   @override
   @JsonKey()
   final String category;
+  @override
+  final int? dueDay;
 
   @override
   String toString() {
-    return 'FixedExpense(id: $id, name: $name, amount: $amount, category: $category)';
+    return 'FixedExpense(id: $id, name: $name, amount: $amount, category: $category, dueDay: $dueDay)';
   }
 
   @override
@@ -1020,12 +1046,14 @@ class _$FixedExpenseImpl implements _FixedExpense {
             (identical(other.name, name) || other.name == name) &&
             (identical(other.amount, amount) || other.amount == amount) &&
             (identical(other.category, category) ||
-                other.category == category));
+                other.category == category) &&
+            (identical(other.dueDay, dueDay) || other.dueDay == dueDay));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, amount, category);
+  int get hashCode =>
+      Object.hash(runtimeType, id, name, amount, category, dueDay);
 
   /// Create a copy of FixedExpense
   /// with the given fields replaced by the non-null parameter values.
@@ -1047,6 +1075,7 @@ abstract class _FixedExpense implements FixedExpense {
     required final String name,
     required final double amount,
     final String category,
+    final int? dueDay,
   }) = _$FixedExpenseImpl;
 
   factory _FixedExpense.fromJson(Map<String, dynamic> json) =
@@ -1060,6 +1089,8 @@ abstract class _FixedExpense implements FixedExpense {
   double get amount;
   @override
   String get category;
+  @override
+  int? get dueDay;
 
   /// Create a copy of FixedExpense
   /// with the given fields replaced by the non-null parameter values.

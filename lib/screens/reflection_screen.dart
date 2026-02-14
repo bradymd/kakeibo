@@ -74,14 +74,9 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
     return KakeiboScaffold(
       title: 'End of Month',
       subtitle: displayMonth,
-      showBackButton: true,
-      onBack: () {
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go('/');
-        }
-      },
+      showHomeButton: true,
+      centerTitle: true,
+      onBack: () => context.go('/'),
       body: monthAsync.when(
         loading: () =>
             const Center(child: CircularProgressIndicator()),

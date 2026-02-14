@@ -97,6 +97,7 @@ class KakeiboMonthsNotifier extends AsyncNotifier<List<KakeiboMonth>> {
     required String name,
     required double amount,
     required String category,
+    int? dueDay,
   }) async {
     final db = ref.read(databaseProvider);
     final fixed = FixedExpense(
@@ -104,6 +105,7 @@ class KakeiboMonthsNotifier extends AsyncNotifier<List<KakeiboMonth>> {
       name: name,
       amount: amount,
       category: category,
+      dueDay: dueDay,
     );
     final existing = await db.getMonth(monthId);
     if (existing == null) {
@@ -111,6 +113,12 @@ class KakeiboMonthsNotifier extends AsyncNotifier<List<KakeiboMonth>> {
       await db.upsertMonth(KakeiboMonth(id: monthId, year: year, month: month));
     }
     await db.insertFixedExpense(monthId, fixed);
+    ref.invalidateSelf();
+  }
+
+  Future<void> updateFixedExpense(FixedExpense expense) async {
+    final db = ref.read(databaseProvider);
+    await db.updateFixedExpense(expense);
     ref.invalidateSelf();
   }
 
@@ -134,6 +142,13 @@ class KakeiboMonthsNotifier extends AsyncNotifier<List<KakeiboMonth>> {
     }
     await db.insertIncomeSource(monthId, src);
     // Recalculate total income from sources
+    await _syncIncomeTotal(monthId);
+    ref.invalidateSelf();
+  }
+
+  Future<void> updateIncomeSource(IncomeSource source, String monthId) async {
+    final db = ref.read(databaseProvider);
+    await db.updateIncomeSource(source);
     await _syncIncomeTotal(monthId);
     ref.invalidateSelf();
   }

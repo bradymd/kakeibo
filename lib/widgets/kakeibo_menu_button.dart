@@ -4,6 +4,7 @@ import 'package:kakeibo/theme/app_colors.dart';
 
 enum _MenuRoute {
   home('/', 'Home', Icons.home_rounded),
+  income('/income', 'Income', Icons.account_balance_wallet_rounded),
   expenses('/expenses', 'Expenses', Icons.receipt_long_rounded),
   fixedCosts('/fixed-expenses', 'Fixed Costs', Icons.account_balance_rounded),
   setup('/setup', 'Start of Month', Icons.play_arrow_rounded),

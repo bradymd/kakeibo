@@ -46,6 +46,7 @@ class FixedExpenses extends Table {
   RealColumn get amount => real()();
   TextColumn get category =>
       text().withDefault(const Constant('other'))();
+  IntColumn get dueDay => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -76,7 +77,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -84,6 +85,9 @@ class AppDatabase extends _$AppDatabase {
         onUpgrade: (m, from, to) async {
           if (from < 2) {
             await m.createTable(incomeSources);
+          }
+          if (from < 3) {
+            await m.addColumn(fixedExpenses, fixedExpenses.dueDay);
           }
         },
       );
@@ -182,6 +186,18 @@ class AppDatabase extends _$AppDatabase {
         name: exp.name,
         amount: exp.amount,
         category: Value(exp.category),
+        dueDay: Value(exp.dueDay),
+      ),
+    );
+  }
+
+  Future<void> updateFixedExpense(models.FixedExpense exp) async {
+    await (update(fixedExpenses)..where((t) => t.id.equals(exp.id))).write(
+      FixedExpensesCompanion(
+        name: Value(exp.name),
+        amount: Value(exp.amount),
+        category: Value(exp.category),
+        dueDay: Value(exp.dueDay),
       ),
     );
   }
@@ -209,6 +225,15 @@ class AppDatabase extends _$AppDatabase {
         monthId: monthId,
         name: src.name,
         amount: src.amount,
+      ),
+    );
+  }
+
+  Future<void> updateIncomeSource(models.IncomeSource src) async {
+    await (update(incomeSources)..where((t) => t.id.equals(src.id))).write(
+      IncomeSourcesCompanion(
+        name: Value(src.name),
+        amount: Value(src.amount),
       ),
     );
   }
@@ -285,6 +310,7 @@ class AppDatabase extends _$AppDatabase {
       name: row.name,
       amount: row.amount,
       category: normalisedCat,
+      dueDay: row.dueDay,
     );
   }
 }

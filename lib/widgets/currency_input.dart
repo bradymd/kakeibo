@@ -10,6 +10,7 @@ class CurrencyInput extends StatelessWidget {
     this.label,
     this.hint,
     this.onChanged,
+    this.prefixColor,
   });
 
   final TextEditingController controller;
@@ -17,6 +18,7 @@ class CurrencyInput extends StatelessWidget {
   final String? label;
   final String? hint;
   final ValueChanged<String>? onChanged;
+  final Color? prefixColor;
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +32,8 @@ class CurrencyInput extends StatelessWidget {
         labelText: label,
         hintText: hint ?? '0.00',
         prefixText: '$currencySymbol ',
-        prefixStyle: const TextStyle(
-          color: AppColors.hotPink,
+        prefixStyle: TextStyle(
+          color: prefixColor ?? AppColors.hotPink,
           fontWeight: FontWeight.w700,
           fontSize: 16,
         ),

@@ -12,9 +12,11 @@ class KakeiboScaffold extends StatelessWidget {
     this.actions,
     this.floatingActionButton,
     this.showBackButton = false,
+    this.showHomeButton = false,
     this.onBack,
     this.headerBottom,
     this.showMenuButton = true,
+    this.centerTitle = false,
   });
 
   final String title;
@@ -23,9 +25,11 @@ class KakeiboScaffold extends StatelessWidget {
   final List<Widget>? actions;
   final Widget? floatingActionButton;
   final bool showBackButton;
+  final bool showHomeButton;
   final VoidCallback? onBack;
   final Widget? headerBottom;
   final bool showMenuButton;
+  final bool centerTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +49,13 @@ class KakeiboScaffold extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        if (showBackButton)
+                        if (showHomeButton)
+                          IconButton(
+                            icon: const Icon(Icons.home_rounded,
+                                color: Colors.white),
+                            onPressed: onBack ?? () => Navigator.of(context).pop(),
+                          )
+                        else if (showBackButton)
                           IconButton(
                             icon: const Icon(Icons.arrow_back_rounded,
                                 color: Colors.white),
@@ -53,7 +63,9 @@ class KakeiboScaffold extends StatelessWidget {
                           ),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: centerTitle
+                                ? CrossAxisAlignment.center
+                                : CrossAxisAlignment.start,
                             children: [
                               Text(
                                 title,

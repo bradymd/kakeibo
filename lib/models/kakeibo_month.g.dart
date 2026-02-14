@@ -94,6 +94,7 @@ _$FixedExpenseImpl _$$FixedExpenseImplFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       amount: (json['amount'] as num).toDouble(),
       category: json['category'] as String? ?? 'Other',
+      dueDay: (json['dueDay'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$FixedExpenseImplToJson(_$FixedExpenseImpl instance) =>
@@ -102,6 +103,7 @@ Map<String, dynamic> _$$FixedExpenseImplToJson(_$FixedExpenseImpl instance) =>
       'name': instance.name,
       'amount': instance.amount,
       'category': instance.category,
+      'dueDay': instance.dueDay,
     };
 
 _$ReflectionImpl _$$ReflectionImplFromJson(Map<String, dynamic> json) =>

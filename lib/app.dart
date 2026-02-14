@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kakeibo/screens/add_expense_screen.dart';
 import 'package:kakeibo/screens/all_expenses_screen.dart';
+import 'package:kakeibo/screens/add_fixed_expense_screen.dart';
+import 'package:kakeibo/screens/add_income_screen.dart';
 import 'package:kakeibo/screens/fixed_expenses_screen.dart';
+import 'package:kakeibo/screens/import_screen.dart';
+import 'package:kakeibo/screens/income_screen.dart';
 import 'package:kakeibo/screens/home_screen.dart';
 import 'package:kakeibo/screens/reflection_screen.dart';
 import 'package:kakeibo/screens/settings_screen.dart';
@@ -38,6 +42,40 @@ final _router = GoRouter(
     GoRoute(
       path: '/reflection',
       builder: (context, state) => const ReflectionScreen(),
+    ),
+    GoRoute(
+      path: '/add-fixed-expense',
+      builder: (context, state) => const AddFixedExpenseScreen(),
+    ),
+    GoRoute(
+      path: '/edit-fixed-expense/:id',
+      builder: (context, state) => AddFixedExpenseScreen(
+        editFixedExpenseId: state.pathParameters['id'],
+      ),
+    ),
+    GoRoute(
+      path: '/income',
+      builder: (context, state) => const IncomeScreen(),
+    ),
+    GoRoute(
+      path: '/add-income',
+      builder: (context, state) => const AddIncomeScreen(),
+    ),
+    GoRoute(
+      path: '/edit-income/:id',
+      builder: (context, state) => AddIncomeScreen(
+        editIncomeId: state.pathParameters['id'],
+      ),
+    ),
+    GoRoute(
+      path: '/import-fixed-costs',
+      builder: (context, state) =>
+          const ImportScreen(importType: ImportType.fixedCosts),
+    ),
+    GoRoute(
+      path: '/import-income',
+      builder: (context, state) =>
+          const ImportScreen(importType: ImportType.income),
     ),
     GoRoute(
       path: '/add-expense',

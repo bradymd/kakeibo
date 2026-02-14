@@ -33,7 +33,31 @@ class ExpenseTile extends StatelessWidget {
         ),
         child: const Icon(Icons.delete_rounded, color: Colors.white),
       ),
-      onDismissed: (_) => onDelete?.call(),
+      confirmDismiss: (_) async {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Delete expense?'),
+            content: Text(
+                'Are you sure you want to delete "${expense.description}"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed == true) {
+          onDelete?.call();
+        }
+        return confirmed ?? false;
+      },
       child: ListTile(
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),

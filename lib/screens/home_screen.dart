@@ -55,7 +55,19 @@ class HomeScreen extends ConsumerWidget {
               child: const Icon(Icons.add_rounded, size: 28),
             )
           : null,
-      body: monthAsync.when(
+      body: GestureDetector(
+        onHorizontalDragEnd: (details) {
+          final velocity = details.primaryVelocity ?? 0;
+          if (velocity > 300) {
+            // Swipe right → Expenses
+            context.go('/expenses');
+          } else if (velocity < -300) {
+            // Swipe left → Fixed Costs
+            context.go('/fixed-expenses');
+          }
+        },
+        behavior: HitTestBehavior.translucent,
+        child: monthAsync.when(
               loading: () => const Center(
                 child: CircularProgressIndicator(color: AppColors.hotPink),
               ),
@@ -172,6 +184,7 @@ class HomeScreen extends ConsumerWidget {
                 );
               },
             ),
+      ),
     );
   }
 }
