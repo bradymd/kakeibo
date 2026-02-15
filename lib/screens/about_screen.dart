@@ -156,20 +156,22 @@ class AboutScreen extends ConsumerWidget {
             child: Column(
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Image.asset(
-                      'assets/images/tip-jar.png',
-                      width: 72,
-                      height: 72,
-                      fit: BoxFit.contain,
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
+                    Flexible(
                       child: Text(
-                        'If you found this app useful, please consider a small donation.',
+                        'If you found this app useful,\nplease consider a small donation.',
                         style: AppTextStyles.body.copyWith(height: 1.5),
                       ),
+                    ),
+                    const SizedBox(width: 12),
+                    Image.asset(
+                      'assets/images/wolf-please.png',
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.contain,
                     ),
                   ],
                 ),
