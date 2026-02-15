@@ -5,44 +5,59 @@ All notable changes to the Kakeibo app will be documented in this file.
 ## [Unreleased]
 
 ### Added
-- Hamburger menu (☰) replaces bottom navigation bar with 6 items: Home, Expenses, Fixed Costs, Start of Month, End of Month, App Settings
-- Kanji labels alongside English throughout: Income (収入), Fixed Costs (固定費), Money to budget (予算), Savings goal (貯金目標), You have spent (支出), Money remaining (残高), Recent Expenses (最近の支出), Four Pillars (四柱)
-- Day-of-month progress shown as individual blocks (one per day)
-- Proportional spending bars on Four Pillars cards
-- Savings goal set via slider on Start of Month screen
-- Income and Fixed Costs breakdown now displayed at top of main page
-- Conditional summary messages based on savings goal and spending status
-- Better handling of £0 and negative amounts in budget bar labels
-- Intelligent narrative summary on Monthly Reflection page that adapts based on:
-  - Income and fixed costs breakdown
-  - Whether a savings goal was set
-  - Spending outcome (met goal, partial savings, or overspent)
-- Japanese-style pig and wolf mascot icons on Monthly Reflection:
-  - Pig icon (貯試) appears when savings goals are met
-  - Wolf icon (設出) appears when savings goals are not met or overspent
+- Tip jar (in-app purchase) on About page — two consumable tips: "A small thank you" and "Buy me a coffee"
+- Support page link in Settings and About page (opens bradymd.github.io/kakeibo)
+- PayPal donation card on GitHub support page
+- iOS Privacy Manifest for App Store compliance
+- Encryption compliance declaration in Info.plist
+- Android release signing configuration
+- ProGuard/R8 rules for release builds
+- Codemagic Android release workflow
+- Dart obfuscation for release builds
+- Privacy policy page
+- Public-facing README
 
 ### Changed
-- Navigation restructured: flat routes with hamburger menu instead of bottom tab bar
-- Month navigator moved inline with title to save vertical space
-- Reflection screen uses responsive 3-column layout with scaled fonts
-- Budget bar "Money remaining" shows £0 when over budget (summary text still shows real figure)
-- Remaining segment guaranteed minimum width so text stays readable
-- Fixed Costs now displayed in red for better visibility
-- Renamed "Fixed Expense" to "Fixed Cost" throughout the app
-- Reordered Fixed Costs form: Category → Amount → Name (optional)
-- Name field is now optional when adding Fixed Costs
-- Summary messages now contextual:
-  - With savings goal: "To meet your savings goal of £X, you have £Y remaining"
-  - Without savings goal: "You have £X left to spend or save"
-  - When overspent: "You are overspent by £X"
+- INTERNET permission added to main Android manifest (was only in debug)
+
+## [1.0.0+5]
+
+### Added
+- Search utility to find expenses across all months
+- Rename categories tool for fixed costs
+- Currency dropdown selector (GBP, USD, EUR, JPY, and more)
+- Dynamic version display in app settings
+- About Kakeibo page with historical context about Hani Motoko
+- Directional swipe navigation between dashboard, expenses, and fixed costs
+
+### Changed
+- Pillar selector uses Wrap layout instead of GridView to fix excess spacing
+- Pillar labels improved with better formatting
+
+## [1.0.0+3]
+
+### Added
+- Dedicated Income page with multiple income sources
+- Import feature to carry forward fixed costs from previous months
+- Edit support for income entries
+- Swipe-to-delete with confirmation dialogs
+
+## [1.0.0+2]
+
+### Added
+- Codemagic CI/CD pipeline for iOS TestFlight builds
+
+### Changed
+- Redesigned Start of Month screen — savings goal is now a text field (removed slider)
+- Month navigator centered in header
+- Renamed Settings header to "App Settings" to match hamburger menu
 
 ### Fixed
-- Form validation now works immediately as you type (Add Expense, Fixed Costs, Income)
-- Button enable/disable state updates in real-time without needing to click other fields
-- Removed prescriptive "ideal budget" display from Four Pillars - now shows only actual spending
-- Floating action button displays tooltip on hover
-- Budget bar savings segment now shrinks as it gets consumed by overspending (instead of just changing color)
-- Overspend calculation excludes aspirational savings goal
+- iOS header distortion caused by CherryBlossomDecoration overlay
+
+### Removed
+- Cherry blossom image asset
+- Savings goal slider (replaced with direct text input)
 
 ## [1.0.0+1] - Initial Release
 
@@ -52,5 +67,10 @@ All notable changes to the Kakeibo app will be documented in this file.
 - Monthly income and savings goal setup
 - Fixed costs management
 - Expense tracking with categories
-- Budget visualization with progress bars
-- Monthly reflection feature
+- Budget visualization with progress bars and stacked budget bar
+- Monthly reflection with pig/wolf mascot icons
+- Hamburger menu navigation with kanji labels
+- Day-of-month progress blocks
+- Proportional spending bars on Four Pillars cards
+- Conditional summary messages based on savings and spending status
+- Intelligent narrative summary on Monthly Reflection page

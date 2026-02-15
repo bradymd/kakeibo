@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kakeibo/models/pillar.dart';
+import 'package:kakeibo/providers/tip_jar_provider.dart';
 import 'package:kakeibo/theme/app_colors.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
+import 'package:kakeibo/widgets/sparkle_button.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class AboutScreen extends StatelessWidget {
+class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tipJar = ref.watch(tipJarProvider);
+
     return KakeiboScaffold(
       title: 'About',
       subtitle: 'The art of mindful spending',
@@ -135,8 +141,151 @@ class AboutScreen extends StatelessWidget {
             'reflect often. Small, consistent acts of awareness lead to lasting change.',
           ),
 
+          const SizedBox(height: 32),
+
+          // Tip jar card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.softPurple,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.vividPurple.withValues(alpha: 0.15),
+              ),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/images/tip-jar.png',
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.contain,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        'If you found this app useful, please consider a small donation.',
+                        style: AppTextStyles.body.copyWith(height: 1.5),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                tipJar.when(
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(12),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                  error: (_, __) => _tipJarFallback(),
+                  data: (tipState) {
+                    if (tipState.lastSuccess) {
+                      return Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.favorite_rounded,
+                                  color: AppColors.hotPink, size: 20),
+                              const SizedBox(width: 8),
+                              Text('Thank you for your support!',
+                                  style: AppTextStyles.bodyBold.copyWith(
+                                    color: AppColors.success,
+                                  )),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          ..._tipButtons(tipState, ref),
+                        ],
+                      );
+                    }
+                    if (tipState.products.isEmpty) {
+                      return _tipJarFallback();
+                    }
+                    return Column(
+                      children: [
+                        if (tipState.lastError != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Text(
+                              tipState.lastError!,
+                              style: AppTextStyles.caption
+                                  .copyWith(color: AppColors.danger),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ..._tipButtons(tipState, ref),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () => launchUrl(
+                    Uri.parse('https://bradymd.github.io/kakeibo/'),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Kakeibo App Support Page on GitHub — ',
+                          style: AppTextStyles.caption,
+                        ),
+                        TextSpan(
+                          text: 'click here',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.vividPurple,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppColors.vividPurple,
+                          ),
+                        ),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           const SizedBox(height: 80),
         ],
+      ),
+    );
+  }
+
+  static List<Widget> _tipButtons(TipJarState tipState, WidgetRef ref) {
+    return tipState.products.map((product) {
+      final label = product.id == 'tip_small'
+          ? 'A small thank you'
+          : 'Buy me a coffee';
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: SparkleButton(
+          label: '$label  ${product.price}',
+          icon: product.id == 'tip_small'
+              ? Icons.favorite_rounded
+              : Icons.coffee_rounded,
+          isLoading: tipState.isPurchasing,
+          onPressed: tipState.isPurchasing
+              ? null
+              : () => ref.read(tipJarProvider.notifier).buy(product),
+        ),
+      );
+    }).toList();
+  }
+
+  static Widget _tipJarFallback() {
+    return Center(
+      child: Text(
+        'Tip jar is available on iOS and Android.',
+        style: AppTextStyles.caption,
+        textAlign: TextAlign.center,
       ),
     );
   }

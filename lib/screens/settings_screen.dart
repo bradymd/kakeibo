@@ -7,6 +7,7 @@ import 'package:kakeibo/theme/app_colors.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -95,6 +96,25 @@ class SettingsScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 onTap: () => context.push('/rename-categories'),
+              ),
+
+              ListTile(
+                dense: true,
+                visualDensity: VisualDensity.compact,
+                leading: const Icon(Icons.favorite_rounded,
+                    color: AppColors.hotPink, size: 20),
+                title: Text('Support', style: AppTextStyles.bodyBold),
+                subtitle: Text('Help support Kakeibo development',
+                    style: AppTextStyles.caption),
+                trailing: const Icon(Icons.open_in_new_rounded,
+                    size: 18, color: AppColors.textMuted),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                onTap: () => launchUrl(
+                  Uri.parse('https://bradymd.github.io/kakeibo/'),
+                  mode: LaunchMode.externalApplication,
+                ),
               ),
 
               const SizedBox(height: 24),
