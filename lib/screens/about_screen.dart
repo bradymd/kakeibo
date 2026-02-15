@@ -264,15 +264,13 @@ class AboutScreen extends ConsumerWidget {
   static List<Widget> _tipButtons(TipJarState tipState, WidgetRef ref) {
     return tipState.products.map((product) {
       final label = product.id == 'tip_small'
-          ? 'A small thank you'
-          : 'Buy me a coffee';
+          ? 'Thank You'
+          : 'Big Thank You';
       return Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: SparkleButton(
           label: '$label  ${product.price}',
-          icon: product.id == 'tip_small'
-              ? Icons.favorite_rounded
-              : Icons.coffee_rounded,
+          icon: Icons.favorite_rounded,
           isLoading: tipState.isPurchasing,
           onPressed: tipState.isPurchasing
               ? null
