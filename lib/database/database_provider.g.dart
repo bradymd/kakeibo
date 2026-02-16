@@ -488,6 +488,18 @@ class $ExpensesTable extends Expenses
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -497,6 +509,7 @@ class $ExpensesTable extends Expenses
     amount,
     pillar,
     notes,
+    createdAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -564,6 +577,12 @@ class $ExpensesTable extends Expenses
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
     return context;
   }
 
@@ -601,6 +620,10 @@ class $ExpensesTable extends Expenses
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
     );
   }
 
@@ -618,6 +641,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
   final double amount;
   final String pillar;
   final String notes;
+  final int createdAt;
   const ExpenseRow({
     required this.id,
     required this.monthId,
@@ -626,6 +650,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
     required this.amount,
     required this.pillar,
     required this.notes,
+    required this.createdAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -637,6 +662,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
     map['amount'] = Variable<double>(amount);
     map['pillar'] = Variable<String>(pillar);
     map['notes'] = Variable<String>(notes);
+    map['created_at'] = Variable<int>(createdAt);
     return map;
   }
 
@@ -649,6 +675,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
       amount: Value(amount),
       pillar: Value(pillar),
       notes: Value(notes),
+      createdAt: Value(createdAt),
     );
   }
 
@@ -665,6 +692,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
       amount: serializer.fromJson<double>(json['amount']),
       pillar: serializer.fromJson<String>(json['pillar']),
       notes: serializer.fromJson<String>(json['notes']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
     );
   }
   @override
@@ -678,6 +706,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
       'amount': serializer.toJson<double>(amount),
       'pillar': serializer.toJson<String>(pillar),
       'notes': serializer.toJson<String>(notes),
+      'createdAt': serializer.toJson<int>(createdAt),
     };
   }
 
@@ -689,6 +718,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
     double? amount,
     String? pillar,
     String? notes,
+    int? createdAt,
   }) => ExpenseRow(
     id: id ?? this.id,
     monthId: monthId ?? this.monthId,
@@ -697,6 +727,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
     amount: amount ?? this.amount,
     pillar: pillar ?? this.pillar,
     notes: notes ?? this.notes,
+    createdAt: createdAt ?? this.createdAt,
   );
   ExpenseRow copyWithCompanion(ExpensesCompanion data) {
     return ExpenseRow(
@@ -709,6 +740,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
       amount: data.amount.present ? data.amount.value : this.amount,
       pillar: data.pillar.present ? data.pillar.value : this.pillar,
       notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
 
@@ -721,14 +753,23 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
           ..write('description: $description, ')
           ..write('amount: $amount, ')
           ..write('pillar: $pillar, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, monthId, date, description, amount, pillar, notes);
+  int get hashCode => Object.hash(
+    id,
+    monthId,
+    date,
+    description,
+    amount,
+    pillar,
+    notes,
+    createdAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -739,7 +780,8 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
           other.description == this.description &&
           other.amount == this.amount &&
           other.pillar == this.pillar &&
-          other.notes == this.notes);
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt);
 }
 
 class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
@@ -750,6 +792,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
   final Value<double> amount;
   final Value<String> pillar;
   final Value<String> notes;
+  final Value<int> createdAt;
   final Value<int> rowid;
   const ExpensesCompanion({
     this.id = const Value.absent(),
@@ -759,6 +802,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
     this.amount = const Value.absent(),
     this.pillar = const Value.absent(),
     this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ExpensesCompanion.insert({
@@ -769,6 +813,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
     required double amount,
     required String pillar,
     this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        monthId = Value(monthId),
@@ -784,6 +829,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
     Expression<double>? amount,
     Expression<String>? pillar,
     Expression<String>? notes,
+    Expression<int>? createdAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -794,6 +840,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
       if (amount != null) 'amount': amount,
       if (pillar != null) 'pillar': pillar,
       if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -806,6 +853,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
     Value<double>? amount,
     Value<String>? pillar,
     Value<String>? notes,
+    Value<int>? createdAt,
     Value<int>? rowid,
   }) {
     return ExpensesCompanion(
@@ -816,6 +864,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
       amount: amount ?? this.amount,
       pillar: pillar ?? this.pillar,
       notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -844,6 +893,9 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -860,6 +912,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
           ..write('amount: $amount, ')
           ..write('pillar: $pillar, ')
           ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2350,6 +2403,7 @@ typedef $$ExpensesTableCreateCompanionBuilder =
       required double amount,
       required String pillar,
       Value<String> notes,
+      Value<int> createdAt,
       Value<int> rowid,
     });
 typedef $$ExpensesTableUpdateCompanionBuilder =
@@ -2361,6 +2415,7 @@ typedef $$ExpensesTableUpdateCompanionBuilder =
       Value<double> amount,
       Value<String> pillar,
       Value<String> notes,
+      Value<int> createdAt,
       Value<int> rowid,
     });
 
@@ -2427,6 +2482,11 @@ class $$ExpensesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$KakeiboMonthsTableFilterComposer get monthId {
     final $$KakeiboMonthsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -2490,6 +2550,11 @@ class $$ExpensesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$KakeiboMonthsTableOrderingComposer get monthId {
     final $$KakeiboMonthsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -2542,6 +2607,9 @@ class $$ExpensesTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
   $$KakeiboMonthsTableAnnotationComposer get monthId {
     final $$KakeiboMonthsTableAnnotationComposer composer = $composerBuilder(
@@ -2602,6 +2670,7 @@ class $$ExpensesTableTableManager
                 Value<double> amount = const Value.absent(),
                 Value<String> pillar = const Value.absent(),
                 Value<String> notes = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExpensesCompanion(
                 id: id,
@@ -2611,6 +2680,7 @@ class $$ExpensesTableTableManager
                 amount: amount,
                 pillar: pillar,
                 notes: notes,
+                createdAt: createdAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2622,6 +2692,7 @@ class $$ExpensesTableTableManager
                 required double amount,
                 required String pillar,
                 Value<String> notes = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExpensesCompanion.insert(
                 id: id,
@@ -2631,6 +2702,7 @@ class $$ExpensesTableTableManager
                 amount: amount,
                 pillar: pillar,
                 notes: notes,
+                createdAt: createdAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

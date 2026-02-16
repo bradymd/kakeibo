@@ -137,7 +137,10 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
           Expanded(
             child: () {
                 var expenses = [...currentMonth.expenses]
-                  ..sort((a, b) => b.date.compareTo(a.date));
+                  ..sort((a, b) {
+                    final cmp = b.date.compareTo(a.date);
+                    return cmp != 0 ? cmp : b.createdAt.compareTo(a.createdAt);
+                  });
 
                 if (_filterPillar != null) {
                   expenses = expenses

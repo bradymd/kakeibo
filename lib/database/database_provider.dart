@@ -33,6 +33,7 @@ class Expenses extends Table {
   RealColumn get amount => real()();
   TextColumn get pillar => text()();
   TextColumn get notes => text().withDefault(const Constant(''))();
+  IntColumn get createdAt => integer().withDefault(const Constant(0))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -77,7 +78,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -88,6 +89,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 3) {
             await m.addColumn(fixedExpenses, fixedExpenses.dueDay);
+          }
+          if (from < 4) {
+            await m.addColumn(expenses, expenses.createdAt);
           }
         },
       );
@@ -148,6 +152,7 @@ class AppDatabase extends _$AppDatabase {
         amount: exp.amount,
         pillar: exp.pillar.name,
         notes: Value(exp.notes),
+        createdAt: Value(exp.createdAt),
       ),
     );
   }
@@ -394,6 +399,7 @@ class AppDatabase extends _$AppDatabase {
         orElse: () => Pillar.needs,
       ),
       notes: row.notes,
+      createdAt: row.createdAt,
     );
   }
 

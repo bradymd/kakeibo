@@ -69,6 +69,7 @@ class KakeiboMonthsNotifier extends AsyncNotifier<List<KakeiboMonth>> {
       amount: amount,
       pillar: pillar,
       notes: notes,
+      createdAt: DateTime.now().millisecondsSinceEpoch,
     );
     // Ensure month exists
     final existing = await db.getMonth(monthId);

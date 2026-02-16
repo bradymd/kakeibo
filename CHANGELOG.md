@@ -6,6 +6,9 @@ All notable changes to the Kakeibo app will be documented in this file.
 
 ### Added
 - Tip jar (in-app purchase) on About page — two consumable tips: "A small thank you" and "Buy me a coffee"
+
+### Fixed
+- Expenses with the same date now sort newest-first (added createdAt timestamp)
 - Support page link in Settings and About page (opens bradymd.github.io/kakeibo)
 - PayPal donation card on GitHub support page
 - iOS Privacy Manifest for App Store compliance

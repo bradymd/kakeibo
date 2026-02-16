@@ -52,7 +52,10 @@ final recentExpensesProvider = Provider<List<KakeiboExpense>>((ref) {
   final monthAsync = ref.watch(currentMonthProvider);
   return monthAsync.whenOrNull(data: (m) {
         final sorted = [...m.expenses]
-          ..sort((a, b) => b.date.compareTo(a.date));
+          ..sort((a, b) {
+            final cmp = b.date.compareTo(a.date);
+            return cmp != 0 ? cmp : b.createdAt.compareTo(a.createdAt);
+          });
         return sorted.take(5).toList();
       }) ??
       [];

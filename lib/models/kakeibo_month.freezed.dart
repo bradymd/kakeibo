@@ -597,6 +597,7 @@ mixin _$KakeiboExpense {
   double get amount => throw _privateConstructorUsedError;
   Pillar get pillar => throw _privateConstructorUsedError;
   String get notes => throw _privateConstructorUsedError;
+  int get createdAt => throw _privateConstructorUsedError;
 
   /// Serializes this KakeiboExpense to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -622,6 +623,7 @@ abstract class $KakeiboExpenseCopyWith<$Res> {
     double amount,
     Pillar pillar,
     String notes,
+    int createdAt,
   });
 }
 
@@ -646,6 +648,7 @@ class _$KakeiboExpenseCopyWithImpl<$Res, $Val extends KakeiboExpense>
     Object? amount = null,
     Object? pillar = null,
     Object? notes = null,
+    Object? createdAt = null,
   }) {
     return _then(
       _value.copyWith(
@@ -673,6 +676,10 @@ class _$KakeiboExpenseCopyWithImpl<$Res, $Val extends KakeiboExpense>
                 ? _value.notes
                 : notes // ignore: cast_nullable_to_non_nullable
                       as String,
+            createdAt: null == createdAt
+                ? _value.createdAt
+                : createdAt // ignore: cast_nullable_to_non_nullable
+                      as int,
           )
           as $Val,
     );
@@ -695,6 +702,7 @@ abstract class _$$KakeiboExpenseImplCopyWith<$Res>
     double amount,
     Pillar pillar,
     String notes,
+    int createdAt,
   });
 }
 
@@ -718,6 +726,7 @@ class __$$KakeiboExpenseImplCopyWithImpl<$Res>
     Object? amount = null,
     Object? pillar = null,
     Object? notes = null,
+    Object? createdAt = null,
   }) {
     return _then(
       _$KakeiboExpenseImpl(
@@ -745,6 +754,10 @@ class __$$KakeiboExpenseImplCopyWithImpl<$Res>
             ? _value.notes
             : notes // ignore: cast_nullable_to_non_nullable
                   as String,
+        createdAt: null == createdAt
+            ? _value.createdAt
+            : createdAt // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -760,6 +773,7 @@ class _$KakeiboExpenseImpl implements _KakeiboExpense {
     required this.amount,
     required this.pillar,
     this.notes = '',
+    this.createdAt = 0,
   });
 
   factory _$KakeiboExpenseImpl.fromJson(Map<String, dynamic> json) =>
@@ -778,10 +792,13 @@ class _$KakeiboExpenseImpl implements _KakeiboExpense {
   @override
   @JsonKey()
   final String notes;
+  @override
+  @JsonKey()
+  final int createdAt;
 
   @override
   String toString() {
-    return 'KakeiboExpense(id: $id, date: $date, description: $description, amount: $amount, pillar: $pillar, notes: $notes)';
+    return 'KakeiboExpense(id: $id, date: $date, description: $description, amount: $amount, pillar: $pillar, notes: $notes, createdAt: $createdAt)';
   }
 
   @override
@@ -795,13 +812,23 @@ class _$KakeiboExpenseImpl implements _KakeiboExpense {
                 other.description == description) &&
             (identical(other.amount, amount) || other.amount == amount) &&
             (identical(other.pillar, pillar) || other.pillar == pillar) &&
-            (identical(other.notes, notes) || other.notes == notes));
+            (identical(other.notes, notes) || other.notes == notes) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, date, description, amount, pillar, notes);
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    date,
+    description,
+    amount,
+    pillar,
+    notes,
+    createdAt,
+  );
 
   /// Create a copy of KakeiboExpense
   /// with the given fields replaced by the non-null parameter values.
@@ -828,6 +855,7 @@ abstract class _KakeiboExpense implements KakeiboExpense {
     required final double amount,
     required final Pillar pillar,
     final String notes,
+    final int createdAt,
   }) = _$KakeiboExpenseImpl;
 
   factory _KakeiboExpense.fromJson(Map<String, dynamic> json) =
@@ -845,6 +873,8 @@ abstract class _KakeiboExpense implements KakeiboExpense {
   Pillar get pillar;
   @override
   String get notes;
+  @override
+  int get createdAt;
 
   /// Create a copy of KakeiboExpense
   /// with the given fields replaced by the non-null parameter values.

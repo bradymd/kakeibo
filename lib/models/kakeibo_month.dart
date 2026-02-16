@@ -43,6 +43,7 @@ class KakeiboExpense with _$KakeiboExpense {
     required double amount,
     required Pillar pillar,
     @Default('') String notes,
+    @Default(0) int createdAt,
   }) = _KakeiboExpense;
 
   factory KakeiboExpense.fromJson(Map<String, dynamic> json) =>
