@@ -33,6 +33,13 @@ dev_dependencies:
   freezed: ^2.5.8
   json_serializable: ^6.9.3
   drift_dev: ^2.22.1
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/app-icon-1024.png"
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true
