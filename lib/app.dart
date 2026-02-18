@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kakeibo/providers/database_provider.dart';
 import 'package:kakeibo/screens/add_expense_screen.dart';
 import 'package:kakeibo/screens/all_expenses_screen.dart';
 import 'package:kakeibo/screens/about_screen.dart';
@@ -14,6 +16,7 @@ import 'package:kakeibo/screens/rename_categories_screen.dart';
 import 'package:kakeibo/screens/search_screen.dart';
 import 'package:kakeibo/screens/settings_screen.dart';
 import 'package:kakeibo/screens/setup_screen.dart';
+import 'package:kakeibo/services/auto_backup_manager.dart';
 import 'package:kakeibo/services/swipe_nav.dart';
 import 'package:kakeibo/theme/app_theme.dart';
 
@@ -115,8 +118,31 @@ final _router = GoRouter(
   ],
 );
 
-class KakeiboApp extends StatelessWidget {
+class KakeiboApp extends ConsumerStatefulWidget {
   const KakeiboApp({super.key});
+
+  @override
+  ConsumerState<KakeiboApp> createState() => _KakeiboAppState();
+}
+
+class _KakeiboAppState extends ConsumerState<KakeiboApp> {
+  AutoBackupManager? _autoBackupManager;
+
+  @override
+  void initState() {
+    super.initState();
+    // Delay to ensure providers are ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoBackupManager = AutoBackupManager(ref.read(databaseProvider));
+      _autoBackupManager!.init();
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoBackupManager?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -2,10 +2,14 @@
 
 All notable changes to the Kakeibo app will be documented in this file.
 
-## [Unreleased]
+## [1.0.0+11]
 
 ### Added
+- Backup & Restore in Settings — create a ZIP backup and share/save it, or restore from file
+- Automatic daily backup runs silently while the app is open and on cold start
+- Auto-backup info card in Settings showing last backup time and size, with one-tap restore
 - Tip jar (in-app purchase) on About page — two consumable tips: "A small thank you" and "Buy me a coffee"
+- Updated app icon (yen purse design)
 
 ### Fixed
 - Expenses with the same date now sort newest-first (added createdAt timestamp)
