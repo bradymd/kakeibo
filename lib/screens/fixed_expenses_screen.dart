@@ -11,6 +11,7 @@ import 'package:kakeibo/theme/app_colors.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
 import 'package:kakeibo/services/swipe_nav.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
+import 'package:kakeibo/widgets/staggered_list_item.dart';
 
 class FixedExpensesScreen extends ConsumerWidget {
   const FixedExpensesScreen({super.key});
@@ -89,7 +90,11 @@ class FixedExpensesScreen extends ConsumerWidget {
                   ),
                 )
               else
-                ...currentMonth.fixedExpenses.map((expense) => InkWell(
+                ...currentMonth.fixedExpenses.asMap().entries.map((e) {
+                  final expense = e.value;
+                  return StaggeredListItem(
+                    index: e.key,
+                    child: InkWell(
                       onTap: () => context.push(
                           '/edit-fixed-expense/${expense.id}'),
                       borderRadius: BorderRadius.circular(8),
@@ -129,7 +134,9 @@ class FixedExpensesScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
-                    )),
+                    ),
+                  );
+                }),
 
               // Import prompt — only show when empty
               if (currentMonth.fixedExpenses.isEmpty) ...[

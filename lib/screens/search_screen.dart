@@ -10,6 +10,7 @@ import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/theme/app_colors.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
+import 'package:kakeibo/widgets/staggered_list_item.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -135,19 +136,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   if (_expenses.isNotEmpty) ...[
                     _sectionHeader(
                         'Expenses', _expenses.length, Icons.receipt_long_rounded),
-                    ..._expenses.map((r) => _expenseTile(r, currency)),
+                    ..._expenses.asMap().entries.map((e) =>
+                        StaggeredListItem(index: e.key, child: _expenseTile(e.value, currency))),
                     const SizedBox(height: 16),
                   ],
                   if (_fixedExpenses.isNotEmpty) ...[
                     _sectionHeader('Fixed Costs', _fixedExpenses.length,
                         Icons.push_pin_rounded),
-                    ..._fixedExpenses.map((r) => _fixedExpenseTile(r, currency)),
+                    ..._fixedExpenses.asMap().entries.map((e) =>
+                        StaggeredListItem(index: e.key, child: _fixedExpenseTile(e.value, currency))),
                     const SizedBox(height: 16),
                   ],
                   if (_incomeSources.isNotEmpty) ...[
                     _sectionHeader('Income', _incomeSources.length,
                         Icons.trending_up_rounded),
-                    ..._incomeSources.map((r) => _incomeTile(r, currency)),
+                    ..._incomeSources.asMap().entries.map((e) =>
+                        StaggeredListItem(index: e.key, child: _incomeTile(e.value, currency))),
                     const SizedBox(height: 16),
                   ],
                 ],

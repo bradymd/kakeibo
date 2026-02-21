@@ -11,6 +11,7 @@ import 'package:kakeibo/theme/app_colors.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
 import 'package:kakeibo/widgets/empty_state.dart';
 import 'package:kakeibo/widgets/expense_tile.dart';
+import 'package:kakeibo/widgets/staggered_list_item.dart';
 import 'package:kakeibo/widgets/budget_bar.dart';
 import 'package:kakeibo/widgets/gradient_card.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
@@ -168,17 +169,21 @@ class HomeScreen extends ConsumerWidget {
                           ),
                         )
                       else
-                        ...recentExpenses.map((expense) => ExpenseTile(
-                              expense: expense,
-                              formattedAmount: fmt(expense.amount),
-                              onTap: () => context.push(
-                                  '/edit-expense/${expense.id}'),
-                              onDelete: () {
-                                ref
-                                    .read(kakeiboMonthsProvider.notifier)
-                                    .deleteExpense(expense.id);
-                              },
-                            )),
+                        for (var i = 0; i < recentExpenses.length; i++)
+                        StaggeredListItem(
+                          index: i,
+                          child: ExpenseTile(
+                            expense: recentExpenses[i],
+                            formattedAmount: fmt(recentExpenses[i].amount),
+                            onTap: () => context.push(
+                                '/edit-expense/${recentExpenses[i].id}'),
+                            onDelete: () {
+                              ref
+                                  .read(kakeiboMonthsProvider.notifier)
+                                  .deleteExpense(recentExpenses[i].id);
+                            },
+                          ),
+                        ),
                       const SizedBox(height: 80), // FAB clearance
                     ],
                   ),
@@ -196,11 +201,14 @@ List<Widget> _buildPillarRows(
 ) {
   final maxSpent = pillarTotals.values.fold(0.0, (a, b) => a > b ? a : b);
 
-  return Pillar.values.map((pillar) {
+  return Pillar.values.asMap().entries.map((e) {
+    final pillar = e.value;
     final spent = pillarTotals[pillar] ?? 0;
     final ratio = maxSpent > 0 ? (spent / maxSpent).clamp(0.0, 1.0) : 0.0;
 
-    return Padding(
+    return StaggeredListItem(
+      index: e.key,
+      child: Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: GradientCard(
         padding: const EdgeInsets.all(14),
@@ -255,6 +263,7 @@ List<Widget> _buildPillarRows(
           ],
         ),
       ),
+    ),
     );
   }).toList();
 }

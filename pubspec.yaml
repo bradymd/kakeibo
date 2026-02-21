@@ -1,7 +1,7 @@
 name: kakeibo
-description: "Kakeibo - Japanese mindful budgeting app with K-POP kawaii style"
+description: "Kakeibo - Japanese mindful budgeting app"
 publish_to: 'none'
-version: 1.0.0+13
+version: 1.0.1+14
 
 environment:
   sdk: ^3.10.8

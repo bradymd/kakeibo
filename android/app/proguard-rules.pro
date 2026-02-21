@@ -15,3 +15,6 @@
 
 # Keep annotation classes
 -dontwarn javax.annotation.**
+
+# Suppress Play Core split-install warnings (not used by this app)
+-dontwarn com.google.android.play.core.**

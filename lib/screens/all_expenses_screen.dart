@@ -12,6 +12,7 @@ import 'package:kakeibo/theme/app_colors.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
 import 'package:kakeibo/widgets/empty_state.dart';
 import 'package:kakeibo/widgets/expense_tile.dart';
+import 'package:kakeibo/widgets/staggered_list_item.dart';
 import 'package:kakeibo/services/swipe_nav.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
 import 'package:kakeibo/widgets/month_navigator.dart';
@@ -163,16 +164,19 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
                   itemCount: expenses.length,
                   itemBuilder: (context, index) {
                     final expense = expenses[index];
-                    return ExpenseTile(
-                      expense: expense,
-                      formattedAmount: fmt(expense.amount),
-                      onTap: () => context
-                          .push('/edit-expense/${expense.id}'),
-                      onDelete: () {
-                        ref
-                            .read(kakeiboMonthsProvider.notifier)
-                            .deleteExpense(expense.id);
-                      },
+                    return StaggeredListItem(
+                      index: index,
+                      child: ExpenseTile(
+                        expense: expense,
+                        formattedAmount: fmt(expense.amount),
+                        onTap: () => context
+                            .push('/edit-expense/${expense.id}'),
+                        onDelete: () {
+                          ref
+                              .read(kakeiboMonthsProvider.notifier)
+                              .deleteExpense(expense.id);
+                        },
+                      ),
                     );
                   },
                 );

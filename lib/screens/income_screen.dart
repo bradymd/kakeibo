@@ -9,6 +9,7 @@ import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/theme/app_colors.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
+import 'package:kakeibo/widgets/staggered_list_item.dart';
 
 class IncomeScreen extends ConsumerWidget {
   const IncomeScreen({super.key});
@@ -78,7 +79,11 @@ class IncomeScreen extends ConsumerWidget {
                   ),
                 )
               else
-                ...currentMonth.incomeSources.map((source) => InkWell(
+                ...currentMonth.incomeSources.asMap().entries.map((e) {
+                  final source = e.value;
+                  return StaggeredListItem(
+                    index: e.key,
+                    child: InkWell(
                       onTap: () =>
                           context.push('/edit-income/${source.id}'),
                       borderRadius: BorderRadius.circular(8),
@@ -102,7 +107,9 @@ class IncomeScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
-                    )),
+                    ),
+                  );
+                }),
 
               // Import prompt — only show when empty
               if (currentMonth.incomeSources.isEmpty) ...[
