@@ -47,3 +47,10 @@ ios/certs/
 android/key.properties
 *.jks
 *.keystore
+
+# App Store screenshots (local only)
+screenshots/appstore*/
+
+# Build artifacts & backups
+*.apk
+*.bak

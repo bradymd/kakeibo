@@ -1,4 +1,4 @@
-package com.kakeibo.kakeibo
+package com.kakeibo.kakeibostyle
 
 import io.flutter.embedding.android.FlutterActivity
 
