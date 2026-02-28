@@ -34,9 +34,8 @@ class FixedExpensesScreen extends ConsumerWidget {
     return KakeiboScaffold(
       title: 'Fixed Costs',
       subtitle: 'Monthly bills & commitments',
-      showHomeButton: true,
+      showBackButton: true,
       centerTitle: true,
-      onBack: () => context.go('/'),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/add-fixed-expense'),
         backgroundColor: AppColors.hotPink,

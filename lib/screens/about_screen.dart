@@ -6,7 +6,6 @@ import 'package:kakeibo/theme/app_colors.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
 import 'package:kakeibo/widgets/sparkle_button.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AboutScreen extends ConsumerWidget {
@@ -19,9 +18,8 @@ class AboutScreen extends ConsumerWidget {
     return KakeiboScaffold(
       title: 'About',
       subtitle: 'The art of mindful spending',
-      showHomeButton: true,
+      showBackButton: true,
       centerTitle: true,
-      onBack: () => context.go('/'),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

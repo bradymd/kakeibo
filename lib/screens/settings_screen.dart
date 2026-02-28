@@ -17,6 +17,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:kakeibo/providers/payday_provider.dart';
+import 'package:kakeibo/services/payday_calculator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -179,9 +181,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return KakeiboScaffold(
       title: 'Settings and Tools',
-      showHomeButton: true,
+      showBackButton: true,
       centerTitle: true,
-      onBack: () => context.go('/'),
       body: ListView(
             padding: const EdgeInsets.all(20),
             children: [
@@ -219,6 +220,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ref.read(settingsProvider.notifier).setCurrency(code);
                   }
                 },
+              ),
+
+              const SizedBox(height: 24),
+
+              // Payday
+              Text('Payday', style: AppTextStyles.subheading),
+              const SizedBox(height: 4),
+              ListTile(
+                dense: true,
+                visualDensity: VisualDensity.compact,
+                leading: Icon(Icons.event_rounded,
+                    color: AppColors.paydayAmber, size: 20),
+                title: Text(
+                  PaydayCalculator.presetLabel(ref.watch(paydayPresetProvider)),
+                  style: AppTextStyles.bodyBold,
+                ),
+                subtitle: Text('When do you get paid?',
+                    style: AppTextStyles.caption),
+                trailing: const Icon(Icons.chevron_right_rounded,
+                    size: 18, color: AppColors.textMuted),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                onTap: () => context.push('/payday-settings'),
               ),
 
               const SizedBox(height: 24),
@@ -430,3 +455,4 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 }
+

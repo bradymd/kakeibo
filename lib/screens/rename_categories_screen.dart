@@ -107,7 +107,7 @@ class _RenameCategoriesScreenState
 
     return KakeiboScaffold(
       title: 'Fixed Cost Categories',
-      showHomeButton: true,
+      showBackButton: true,
       centerTitle: true,
       body: _loading
           ? const Center(child: CircularProgressIndicator())

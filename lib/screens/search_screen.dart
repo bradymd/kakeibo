@@ -91,7 +91,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     return KakeiboScaffold(
       title: 'Search',
-      showHomeButton: true,
+      showBackButton: true,
       centerTitle: true,
       body: Column(
         children: [

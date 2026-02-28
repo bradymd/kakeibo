@@ -46,9 +46,8 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
 
     return KakeiboScaffold(
       title: 'Expenses',
-      showHomeButton: true,
+      showBackButton: true,
       centerTitle: true,
-      onBack: () => context.go('/'),
       headerBottom: Center(
         child: MonthNavigator(
           displayText: displayMonth,

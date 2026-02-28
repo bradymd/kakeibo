@@ -31,9 +31,8 @@ class IncomeScreen extends ConsumerWidget {
     return KakeiboScaffold(
       title: 'Income',
       subtitle: 'Your earnings this month',
-      showHomeButton: true,
+      showBackButton: true,
       centerTitle: true,
-      onBack: () => context.go('/'),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/add-income'),
         backgroundColor: AppColors.hotPink,

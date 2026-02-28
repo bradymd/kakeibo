@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kakeibo/theme/app_gradients.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
 import 'package:kakeibo/widgets/kakeibo_menu_button.dart';
@@ -12,7 +13,6 @@ class KakeiboScaffold extends StatelessWidget {
     this.actions,
     this.floatingActionButton,
     this.showBackButton = false,
-    this.showHomeButton = false,
     this.onBack,
     this.headerBottom,
     this.showMenuButton = true,
@@ -25,7 +25,6 @@ class KakeiboScaffold extends StatelessWidget {
   final List<Widget>? actions;
   final Widget? floatingActionButton;
   final bool showBackButton;
-  final bool showHomeButton;
   final VoidCallback? onBack;
   final Widget? headerBottom;
   final bool showMenuButton;
@@ -49,17 +48,18 @@ class KakeiboScaffold extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        if (showHomeButton)
-                          IconButton(
-                            icon: const Icon(Icons.home_rounded,
-                                color: Colors.white),
-                            onPressed: onBack ?? () => Navigator.of(context).pop(),
-                          )
-                        else if (showBackButton)
+                        if (showBackButton)
                           IconButton(
                             icon: const Icon(Icons.arrow_back_rounded,
                                 color: Colors.white),
-                            onPressed: onBack ?? () => Navigator.of(context).pop(),
+                            onPressed: onBack ??
+                                () {
+                                  if (Navigator.canPop(context)) {
+                                    context.pop();
+                                  } else {
+                                    context.go('/');
+                                  }
+                                },
                           ),
                         Expanded(
                           child: Column(
