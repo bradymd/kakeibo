@@ -305,7 +305,7 @@ class BudgetBar extends StatelessWidget {
                           final remaining = financialTotal! - financialDay!;
                           return remaining == 0
                               ? 'Payday!'
-                              : '$remaining ${remaining == 1 ? 'day' : 'days'} to go';
+                              : '$remaining ${remaining == 1 ? 'day' : 'days'} until payday';
                         }(),
                         style: AppTextStyles.caption.copyWith(
                           fontSize: 11,

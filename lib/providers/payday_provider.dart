@@ -26,57 +26,56 @@ final currentPaydayProvider = FutureProvider<DateTime?>((ref) async {
   return PaydayCalculator.suggestedPayday(year, month, preset);
 });
 
-/// Resolved payday for the next month (needed for financial day total).
-final nextPaydayProvider = FutureProvider<DateTime?>((ref) async {
+/// Resolved payday for the previous month (start of this month's financial period).
+final previousPaydayProvider = FutureProvider<DateTime?>((ref) async {
   final monthId = ref.watch(currentMonthIdProvider);
   final preset = ref.watch(paydayPresetProvider);
   if (preset == PaydayPreset.none) return null;
 
-  final nextMonthId = MonthHelpers.getNextMonthId(monthId);
+  final prevMonthId = MonthHelpers.getPrevMonthId(monthId);
 
   final override =
-      await ref.watch(settingsProvider.notifier).getPaydayOverride(nextMonthId);
+      await ref.watch(settingsProvider.notifier).getPaydayOverride(prevMonthId);
   if (override != null) return DateTime.tryParse(override);
 
-  final (:year, :month) = MonthHelpers.parseMonthId(nextMonthId);
+  final (:year, :month) = MonthHelpers.parseMonthId(prevMonthId);
   return PaydayCalculator.suggestedPayday(year, month, preset);
 });
 
 /// Financial progress for the viewed month.
 ///
-/// For the current calendar month: day = today - payday + 1.
-/// For past months (today > end of month): day = total (month complete).
-/// For future months or before payday: null.
+/// The financial period for a month runs from the PREVIOUS month's payday
+/// to THIS month's payday. e.g. February = Jan 31 payday → Feb 27 payday.
+///
+/// If today >= this month's payday: complete.
+/// If today < previous month's payday: null (not started).
+/// Otherwise: live day counter.
 final financialProgressProvider =
     Provider<({int day, int total})?>((ref) {
-  final paydayAsync = ref.watch(currentPaydayProvider);
-  final nextPaydayAsync = ref.watch(nextPaydayProvider);
-  final monthId = ref.watch(currentMonthIdProvider);
+  final prevPaydayAsync = ref.watch(previousPaydayProvider);
+  final currentPaydayAsync = ref.watch(currentPaydayProvider);
 
-  final payday = paydayAsync.valueOrNull;
-  final nextPayday = nextPaydayAsync.valueOrNull;
-  if (payday == null || nextPayday == null) return null;
+  final prevPayday = prevPaydayAsync.valueOrNull;
+  final currentPayday = currentPaydayAsync.valueOrNull;
+  if (prevPayday == null || currentPayday == null) return null;
 
-  final paydayDate = DateTime(payday.year, payday.month, payday.day);
-  final nextPaydayDate =
-      DateTime(nextPayday.year, nextPayday.month, nextPayday.day);
-  final total = PaydayCalculator.financialDays(paydayDate, nextPaydayDate);
+  final startDate = DateTime(prevPayday.year, prevPayday.month, prevPayday.day);
+  final endDate =
+      DateTime(currentPayday.year, currentPayday.month, currentPayday.day);
+  final total = PaydayCalculator.financialDays(startDate, endDate);
 
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
 
-  // Is this a past month? (today is past the end of the viewed calendar month)
-  final (:year, :month) = MonthHelpers.parseMonthId(monthId);
-  final endOfMonth = DateTime(year, month + 1, 0);
-  if (today.isAfter(endOfMonth)) {
-    // Past month — show as complete
+  // On or after this month's payday — financial month is complete
+  if (!today.isBefore(endDate)) {
     return (day: total, total: total);
   }
 
-  // Current or future month — show live progress if after payday
-  if (today.isBefore(paydayDate)) return null;
+  // Before the previous month's payday — not started yet
+  if (today.isBefore(startDate)) return null;
 
-  final day = today.difference(paydayDate).inDays + 1;
+  final day = today.difference(startDate).inDays + 1;
   return (day: day, total: total);
 });
 
