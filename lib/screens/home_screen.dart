@@ -17,6 +17,8 @@ import 'package:kakeibo/widgets/gradient_card.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
 import 'package:kakeibo/widgets/month_navigator.dart';
 import 'package:kakeibo/services/swipe_nav.dart';
+import 'package:kakeibo/providers/payday_provider.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -35,20 +37,40 @@ class HomeScreen extends ConsumerWidget {
     final (:year, :month) = MonthHelpers.parseMonthId(monthId);
     final displayMonth = MonthHelpers.formatMonthDisplay(year, month);
 
+    final paydayAsync = ref.watch(currentPaydayProvider);
+    final payday = paydayAsync.valueOrNull;
+
     return KakeiboScaffold(
       title: '家計簿 Kakeibo',
-      headerBottom: Center(
-        child: MonthNavigator(
-          displayText: displayMonth,
-          onPrevious: () {
-            ref.read(currentMonthIdProvider.notifier).state =
-                MonthHelpers.getPrevMonthId(monthId);
-          },
-          onNext: () {
-            ref.read(currentMonthIdProvider.notifier).state =
-                MonthHelpers.getNextMonthId(monthId);
-          },
-        ),
+      headerBottom: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Center(
+            child: MonthNavigator(
+              displayText: displayMonth,
+              onPrevious: () {
+                ref.read(currentMonthIdProvider.notifier).state =
+                    MonthHelpers.getPrevMonthId(monthId);
+              },
+              onNext: () {
+                ref.read(currentMonthIdProvider.notifier).state =
+                    MonthHelpers.getNextMonthId(monthId);
+              },
+            ),
+          ),
+          if (payday != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                'Payday: ${DateFormat('MMM d').format(payday)}',
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.paydayAmber,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+        ],
       ),
       floatingActionButton: isSetup
           ? FloatingActionButton(
@@ -100,6 +122,9 @@ class HomeScreen extends ConsumerWidget {
                         ? daysInMonth
                         : 1);
 
+                final progress = ref.watch(financialProgressProvider);
+                final daysUntilPayday = ref.watch(daysUntilPaydayProvider);
+
                 return RefreshIndicator(
                   color: AppColors.hotPink,
                   onRefresh: () async {
@@ -119,6 +144,10 @@ class HomeScreen extends ConsumerWidget {
                         formatAmount: fmt,
                         dayOfMonth: dayOfMonth,
                         daysInMonth: daysInMonth,
+                        paydayDayOfMonth: payday?.day,
+                        financialDay: progress?.day,
+                        financialTotal: progress?.total,
+                        daysUntilPayday: daysUntilPayday,
                       ),
 
                       const SizedBox(height: 20),
@@ -147,7 +176,7 @@ class HomeScreen extends ConsumerWidget {
                           ),
                           if (currentMonth.expenses.isNotEmpty)
                             TextButton(
-                              onPressed: () => context.go('/expenses'),
+                              onPressed: () => context.push('/expenses'),
                               child: Text(
                                 'See all',
                                 style: AppTextStyles.caption.copyWith(

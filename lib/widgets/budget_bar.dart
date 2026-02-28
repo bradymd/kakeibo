@@ -27,6 +27,10 @@ class BudgetBar extends StatelessWidget {
     required this.formatAmount,
     required this.dayOfMonth,
     required this.daysInMonth,
+    this.paydayDayOfMonth,
+    this.financialDay,
+    this.financialTotal,
+    this.daysUntilPayday,
   });
 
   final double totalIncome;
@@ -38,6 +42,10 @@ class BudgetBar extends StatelessWidget {
   final String Function(double) formatAmount;
   final int dayOfMonth;
   final int daysInMonth;
+  final int? paydayDayOfMonth;
+  final int? financialDay;
+  final int? financialTotal;
+  final int? daysUntilPayday;
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +79,6 @@ class BudgetBar extends StatelessWidget {
     final trulyOverdrawn = totalSpent > disposableIncome;
 
     final daysToGo = daysInMonth - dayOfMonth;
-    final dayProgress = (dayOfMonth / daysInMonth).clamp(0.0, 1.0);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -268,22 +275,53 @@ class BudgetBar extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Day $dayOfMonth of $daysInMonth',
-                      style: AppTextStyles.caption.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.vividPurple,
+                    if (financialDay != null && financialTotal != null)
+                      Text(
+                        'Day $financialDay of $financialTotal',
+                        style: AppTextStyles.caption.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.vividPurple,
+                        ),
+                      )
+                    else if (daysUntilPayday != null)
+                      Text(
+                        '$daysUntilPayday ${daysUntilPayday == 1 ? 'day' : 'days'} until payday',
+                        style: AppTextStyles.caption.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.paydayAmber,
+                        ),
+                      )
+                    else
+                      Text(
+                        'Day $dayOfMonth of $daysInMonth',
+                        style: AppTextStyles.caption.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.vividPurple,
+                        ),
                       ),
-                    ),
-                    Text(
-                      daysToGo == 0
-                          ? 'Last day of the month'
-                          : '$daysToGo ${daysToGo == 1 ? 'day' : 'days'} to go',
-                      style: AppTextStyles.caption.copyWith(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
+                    if (financialDay != null && financialTotal != null)
+                      Text(
+                        () {
+                          final remaining = financialTotal! - financialDay!;
+                          return remaining == 0
+                              ? 'Payday!'
+                              : '$remaining ${remaining == 1 ? 'day' : 'days'} to go';
+                        }(),
+                        style: AppTextStyles.caption.copyWith(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      )
+                    else if (daysUntilPayday == null)
+                      Text(
+                        daysToGo == 0
+                            ? 'Last day of the month'
+                            : '$daysToGo ${daysToGo == 1 ? 'day' : 'days'} to go',
+                        style: AppTextStyles.caption.copyWith(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -295,14 +333,23 @@ class BudgetBar extends StatelessWidget {
                     return Row(
                       children: List.generate(daysInMonth, (i) {
                         final filled = i < dayOfMonth;
+                        final isPayday = paydayDayOfMonth != null && i == paydayDayOfMonth! - 1;
+                        final Color blockColor;
+                        if (isPayday) {
+                          blockColor = filled
+                              ? AppColors.paydayAmber
+                              : AppColors.paydayAmber.withValues(alpha: 0.35);
+                        } else {
+                          blockColor = filled
+                              ? AppColors.vividPurple
+                              : AppColors.vividPurple.withValues(alpha: 0.12);
+                        }
                         return Container(
                           width: blockWidth,
                           height: 24,
                           margin: EdgeInsets.only(right: i < daysInMonth - 1 ? gap : 0),
                           decoration: BoxDecoration(
-                            color: filled
-                                ? AppColors.vividPurple
-                                : AppColors.vividPurple.withValues(alpha: 0.12),
+                            color: blockColor,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         );

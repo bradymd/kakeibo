@@ -9,6 +9,8 @@ import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/theme/app_colors.dart';
 import 'package:kakeibo/theme/app_text_styles.dart';
 import 'package:kakeibo/widgets/kakeibo_scaffold.dart';
+import 'package:kakeibo/providers/payday_provider.dart';
+import 'package:kakeibo/services/payday_calculator.dart';
 import 'package:kakeibo/widgets/staggered_list_item.dart';
 
 class IncomeScreen extends ConsumerWidget {
@@ -24,6 +26,9 @@ class IncomeScreen extends ConsumerWidget {
 
     final (:year, :month) = MonthHelpers.parseMonthId(monthId);
     final monthName = DateFormat('MMMM').format(DateTime(year, month));
+
+    final paydayPreset = ref.watch(paydayPresetProvider);
+    final payday = ref.watch(currentPaydayProvider).valueOrNull;
 
     String fmt(double amount) =>
         CurrencyFormatter.format(amount, currency: currency);
@@ -65,6 +70,26 @@ class IncomeScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+
+              // Payday date — show when set
+              if (payday != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.event_rounded,
+                          color: AppColors.paydayAmber, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Payday this month is set for ${DateFormat('MMMM d').format(payday)}',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.paydayAmber,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
               // Income sources list
               if (currentMonth.incomeSources.isEmpty)
@@ -154,6 +179,52 @@ class IncomeScreen extends ConsumerWidget {
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ],
+
+              // Payday hint — only show when no preset is set
+              if (paydayPreset == PaydayPreset.none) ...[
+                const SizedBox(height: 16),
+                GestureDetector(
+                  onTap: () => context.push('/payday-settings'),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.paydayAmber.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.event_rounded,
+                            color: AppColors.paydayAmber, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text.rich(
+                            TextSpan(
+                              style: AppTextStyles.caption,
+                              children: [
+                                const TextSpan(
+                                    text:
+                                        'If you have a regular and significant source of income you can define a '),
+                                TextSpan(
+                                  text: 'payday',
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.paydayAmber,
+                                    fontWeight: FontWeight.w700,
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: AppColors.paydayAmber,
+                                  ),
+                                ),
+                                const TextSpan(text: '.'),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

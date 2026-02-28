@@ -2,6 +2,19 @@
 
 All notable changes to the Kakeibo app will be documented in this file.
 
+## [1.0.1+15]
+
+### Added
+- Payday tracking — set a recurring payday preset (last Friday, last weekday, specific date) with per-month overrides
+- Payday countdown and financial day progress on the dashboard
+- Payday date display on Income screen when configured
+- Payday setup hint on Income screen when not yet configured
+- Daily budget indicator on dashboard budget bar
+
+### Fixed
+- Menu navigation now pushes screens onto the stack so the back arrow returns to the previous screen instead of always going home
+- "See all" link on Home screen preserves back navigation to dashboard
+
 ## [1.0.0+11]
 
 ### Added

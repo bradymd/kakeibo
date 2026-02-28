@@ -23,6 +23,7 @@ UserSettings _$UserSettingsFromJson(Map<String, dynamic> json) {
 mixin _$UserSettings {
   String get currency => throw _privateConstructorUsedError;
   String get locale => throw _privateConstructorUsedError;
+  String get paydayPreset => throw _privateConstructorUsedError;
 
   /// Serializes this UserSettings to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -41,7 +42,7 @@ abstract class $UserSettingsCopyWith<$Res> {
     $Res Function(UserSettings) then,
   ) = _$UserSettingsCopyWithImpl<$Res, UserSettings>;
   @useResult
-  $Res call({String currency, String locale});
+  $Res call({String currency, String locale, String paydayPreset});
 }
 
 /// @nodoc
@@ -58,7 +59,11 @@ class _$UserSettingsCopyWithImpl<$Res, $Val extends UserSettings>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? currency = null, Object? locale = null}) {
+  $Res call({
+    Object? currency = null,
+    Object? locale = null,
+    Object? paydayPreset = null,
+  }) {
     return _then(
       _value.copyWith(
             currency: null == currency
@@ -68,6 +73,10 @@ class _$UserSettingsCopyWithImpl<$Res, $Val extends UserSettings>
             locale: null == locale
                 ? _value.locale
                 : locale // ignore: cast_nullable_to_non_nullable
+                      as String,
+            paydayPreset: null == paydayPreset
+                ? _value.paydayPreset
+                : paydayPreset // ignore: cast_nullable_to_non_nullable
                       as String,
           )
           as $Val,
@@ -84,7 +93,7 @@ abstract class _$$UserSettingsImplCopyWith<$Res>
   ) = __$$UserSettingsImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String currency, String locale});
+  $Res call({String currency, String locale, String paydayPreset});
 }
 
 /// @nodoc
@@ -100,7 +109,11 @@ class __$$UserSettingsImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? currency = null, Object? locale = null}) {
+  $Res call({
+    Object? currency = null,
+    Object? locale = null,
+    Object? paydayPreset = null,
+  }) {
     return _then(
       _$UserSettingsImpl(
         currency: null == currency
@@ -111,6 +124,10 @@ class __$$UserSettingsImplCopyWithImpl<$Res>
             ? _value.locale
             : locale // ignore: cast_nullable_to_non_nullable
                   as String,
+        paydayPreset: null == paydayPreset
+            ? _value.paydayPreset
+            : paydayPreset // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -119,7 +136,11 @@ class __$$UserSettingsImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$UserSettingsImpl implements _UserSettings {
-  const _$UserSettingsImpl({this.currency = 'GBP', this.locale = 'en-GB'});
+  const _$UserSettingsImpl({
+    this.currency = 'GBP',
+    this.locale = 'en-GB',
+    this.paydayPreset = 'none',
+  });
 
   factory _$UserSettingsImpl.fromJson(Map<String, dynamic> json) =>
       _$$UserSettingsImplFromJson(json);
@@ -130,10 +151,13 @@ class _$UserSettingsImpl implements _UserSettings {
   @override
   @JsonKey()
   final String locale;
+  @override
+  @JsonKey()
+  final String paydayPreset;
 
   @override
   String toString() {
-    return 'UserSettings(currency: $currency, locale: $locale)';
+    return 'UserSettings(currency: $currency, locale: $locale, paydayPreset: $paydayPreset)';
   }
 
   @override
@@ -143,12 +167,14 @@ class _$UserSettingsImpl implements _UserSettings {
             other is _$UserSettingsImpl &&
             (identical(other.currency, currency) ||
                 other.currency == currency) &&
-            (identical(other.locale, locale) || other.locale == locale));
+            (identical(other.locale, locale) || other.locale == locale) &&
+            (identical(other.paydayPreset, paydayPreset) ||
+                other.paydayPreset == paydayPreset));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, currency, locale);
+  int get hashCode => Object.hash(runtimeType, currency, locale, paydayPreset);
 
   /// Create a copy of UserSettings
   /// with the given fields replaced by the non-null parameter values.
@@ -165,8 +191,11 @@ class _$UserSettingsImpl implements _UserSettings {
 }
 
 abstract class _UserSettings implements UserSettings {
-  const factory _UserSettings({final String currency, final String locale}) =
-      _$UserSettingsImpl;
+  const factory _UserSettings({
+    final String currency,
+    final String locale,
+    final String paydayPreset,
+  }) = _$UserSettingsImpl;
 
   factory _UserSettings.fromJson(Map<String, dynamic> json) =
       _$UserSettingsImpl.fromJson;
@@ -175,6 +204,8 @@ abstract class _UserSettings implements UserSettings {
   String get currency;
   @override
   String get locale;
+  @override
+  String get paydayPreset;
 
   /// Create a copy of UserSettings
   /// with the given fields replaced by the non-null parameter values.

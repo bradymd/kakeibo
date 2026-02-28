@@ -8,6 +8,7 @@ class UserSettings with _$UserSettings {
   const factory UserSettings({
     @Default('GBP') String currency,
     @Default('en-GB') String locale,
+    @Default('none') String paydayPreset,
   }) = _UserSettings;
 
   factory UserSettings.fromJson(Map<String, dynamic> json) =>

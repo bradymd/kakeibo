@@ -107,6 +107,24 @@ class AppDatabase extends _$AppDatabase {
         row, await _getExpenses(id), await _getFixed(id), await _getIncomeSources(id));
   }
 
+  /// Lightweight check: does this month have any data at all?
+  /// True if the month row exists with income > 0, or has any related rows.
+  Future<bool> monthHasData(String id) async {
+    final row = await (select(kakeiboMonths)
+          ..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    if (row == null) return false;
+    if (row.income > 0) return true;
+    // Single EXISTS-style check across all child tables
+    final hasChild = await customSelect(
+      'SELECT 1 WHERE EXISTS (SELECT 1 FROM expenses WHERE month_id = ?)'
+      ' OR EXISTS (SELECT 1 FROM fixed_expenses WHERE month_id = ?)'
+      ' OR EXISTS (SELECT 1 FROM income_sources WHERE month_id = ?)',
+      variables: [Variable(id), Variable(id), Variable(id)],
+    ).get();
+    return hasChild.isNotEmpty;
+  }
+
   Future<List<models.KakeiboMonth>> getAllMonths() async {
     final rows = await select(kakeiboMonths).get();
     final result = <models.KakeiboMonth>[];
@@ -260,6 +278,10 @@ class AppDatabase extends _$AppDatabase {
     await into(appSettings).insertOnConflictUpdate(
       AppSettingsCompanion.insert(key: key, value: value),
     );
+  }
+
+  Future<void> deleteSetting(String key) async {
+    await (delete(appSettings)..where((t) => t.key.equals(key))).go();
   }
 
   // --- Search operations ---

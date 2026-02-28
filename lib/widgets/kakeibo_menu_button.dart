@@ -29,7 +29,13 @@ class KakeiboMenuButton extends StatelessWidget {
       icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 28),
       offset: const Offset(0, 48),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      onSelected: (route) => context.go(route.path),
+      onSelected: (route) {
+        if (route.path == '/') {
+          context.go('/');
+        } else if (!location.startsWith(route.path)) {
+          context.push(route.path);
+        }
+      },
       itemBuilder: (_) => _MenuRoute.values.map((route) {
         final isCurrent = _isCurrentRoute(location, route.path);
         return PopupMenuItem<_MenuRoute>(

@@ -14,6 +14,7 @@ import 'package:kakeibo/screens/home_screen.dart';
 import 'package:kakeibo/screens/reflection_screen.dart';
 import 'package:kakeibo/screens/rename_categories_screen.dart';
 import 'package:kakeibo/screens/search_screen.dart';
+import 'package:kakeibo/screens/payday_settings_screen.dart';
 import 'package:kakeibo/screens/settings_screen.dart';
 import 'package:kakeibo/screens/setup_screen.dart';
 import 'package:kakeibo/services/auto_backup_manager.dart';
@@ -55,6 +56,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/search',
       builder: (context, state) => const SearchScreen(),
+    ),
+    GoRoute(
+      path: '/payday-settings',
+      builder: (context, state) => const PaydaySettingsScreen(),
     ),
     GoRoute(
       path: '/setup',

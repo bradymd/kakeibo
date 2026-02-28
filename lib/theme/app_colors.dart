@@ -9,6 +9,7 @@ class AppColors {
   static const neonMagenta = Color(0xFFE040FB);
   static const cyberCyan = Color(0xFF00E5FF);
   static const sparkleGold = Color(0xFFFFD700);
+  static const paydayAmber = Color(0xFFE68A00);
 
   // Pastels
   static const lavenderBlush = Color(0xFFFFF0F5);
