@@ -19,7 +19,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:kakeibo/providers/payday_provider.dart';
 import 'package:kakeibo/services/payday_calculator.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -282,24 +281,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onTap: () => context.push('/rename-categories'),
               ),
 
-              ListTile(
-                dense: true,
-                visualDensity: VisualDensity.compact,
-                leading: const Icon(Icons.favorite_rounded,
-                    color: AppColors.hotPink, size: 20),
-                title: Text('Support', style: AppTextStyles.bodyBold),
-                subtitle: Text('Help support Kakeibo development',
-                    style: AppTextStyles.caption),
-                trailing: const Icon(Icons.open_in_new_rounded,
-                    size: 18, color: AppColors.textMuted),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                onTap: () => launchUrl(
-                  Uri.parse('https://bradymd.github.io/kakeibo/'),
-                  mode: LaunchMode.externalApplication,
-                ),
-              ),
 
               const SizedBox(height: 24),
 
