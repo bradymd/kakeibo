@@ -263,7 +263,7 @@ class AboutScreen extends ConsumerWidget {
     return tipState.products.map((product) {
       final label = product.id == 'tip_small'
           ? 'Thank You'
-          : 'Big Thank You';
+          : 'Buy Me a Coffee';
       return Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: SparkleButton(
