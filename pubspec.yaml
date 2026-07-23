@@ -1,7 +1,7 @@
 name: kakeibo
 description: "Kakeibo - Japanese mindful budgeting app"
 publish_to: 'none'
-version: 1.0.2+19
+version: 1.0.2+20
 
 environment:
   sdk: ^3.10.8
@@ -22,7 +22,7 @@ dependencies:
   uuid: ^4.5.1
   google_fonts: ^6.2.1
   package_info_plus: ^9.0.0
-  in_app_purchase: ^3.2.0
+  in_app_purchase: ^3.3.0
   url_launcher: ^6.3.1
   archive: ^4.0.2
   file_picker: ^8.1.7
