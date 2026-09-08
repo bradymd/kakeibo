@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kakeibo/models/kakeibo_month.dart';
 import 'package:kakeibo/models/pillar.dart';
 import 'package:kakeibo/providers/kakeibo_provider.dart';
+import 'package:kakeibo/providers/payday_provider.dart';
 import 'package:kakeibo/services/kakeibo_calculator.dart';
+import 'package:kakeibo/services/month_helpers.dart';
 
 final fixedExpensesTotalProvider = Provider<double>((ref) {
   final monthAsync = ref.watch(currentMonthProvider);
@@ -72,4 +74,32 @@ final disposableIncomeProvider = Provider<double>((ref) {
   return monthAsync.whenOrNull(
           data: (m) => m.income - KakeiboCalculator.fixedExpensesTotal(m)) ??
       0;
+});
+
+/// "What can I spend today?" — the gachapon redesign's dashboard hero
+/// figure (README §2b), also used on Start of Month's "Available to
+/// spend" sub-line and the empty Spend screen's copy.
+///
+/// `availableBudget / daysUntilPayday`, falling back to the remaining
+/// days in the calendar month when no payday is configured (or payday
+/// has already passed for the viewed month).
+final dailyAllowanceProvider = Provider<double>((ref) {
+  final availableBudget = ref.watch(availableBudgetProvider);
+  final daysUntilPayday = ref.watch(daysUntilPaydayProvider);
+
+  int days;
+  if (daysUntilPayday != null && daysUntilPayday > 0) {
+    days = daysUntilPayday;
+  } else {
+    final monthId = ref.watch(currentMonthIdProvider);
+    final (:year, :month) = MonthHelpers.parseMonthId(monthId);
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final now = DateTime.now();
+    final remainingInMonth = (year == now.year && month == now.month)
+        ? (daysInMonth - now.day + 1)
+        : daysInMonth;
+    days = remainingInMonth;
+  }
+
+  return availableBudget / (days < 1 ? 1 : days);
 });

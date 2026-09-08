@@ -17,6 +17,7 @@ import 'package:kakeibo/screens/search_screen.dart';
 import 'package:kakeibo/screens/payday_settings_screen.dart';
 import 'package:kakeibo/screens/settings_screen.dart';
 import 'package:kakeibo/screens/setup_screen.dart';
+import 'package:kakeibo/screens/toy_home_screen.dart';
 import 'package:kakeibo/services/auto_backup_manager.dart';
 import 'package:kakeibo/services/swipe_nav.dart';
 import 'package:kakeibo/theme/app_theme.dart';
@@ -33,6 +34,13 @@ final _router = GoRouter(
         state: state,
         child: const HomeScreen(),
       ),
+    ),
+    // Preview-only route for the gachapon redesign's dashboard. Not
+    // linked from anywhere in the app yet — visit directly to review.
+    // Remove once the redesign either replaces '/' or is abandoned.
+    GoRoute(
+      path: '/toy-dashboard',
+      builder: (context, state) => const ToyHomeScreen(),
     ),
     GoRoute(
       path: '/expenses',

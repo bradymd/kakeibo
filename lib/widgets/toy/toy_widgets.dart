@@ -6,6 +6,7 @@ export 'package:kakeibo/widgets/toy/toy_button.dart';
 export 'package:kakeibo/widgets/toy/toy_capsule_filter.dart';
 export 'package:kakeibo/widgets/toy/toy_card.dart';
 export 'package:kakeibo/widgets/toy/toy_fab.dart';
+export 'package:kakeibo/widgets/toy/toy_menu_button.dart';
 export 'package:kakeibo/widgets/toy/toy_pillar_capsule.dart';
 export 'package:kakeibo/widgets/toy/toy_row.dart';
 export 'package:kakeibo/widgets/toy/toy_scaffold.dart';
