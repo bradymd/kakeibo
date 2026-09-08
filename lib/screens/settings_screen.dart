@@ -33,13 +33,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _createBackup() async {
     setState(() => _isBackingUp = true);
+    var dbClosed = false;
     try {
       final db = ref.read(databaseProvider);
       await db.close();
+      dbClosed = true;
 
       final zipPath = await BackupService.createBackup();
-
-      ref.invalidate(databaseProvider);
 
       final isMobile = !kIsWeb && (Platform.isIOS || Platform.isAndroid);
       if (isMobile) {
@@ -70,6 +70,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
       }
     } finally {
+      // Always reopen the database, whether or not the backup itself
+      // succeeded — otherwise a failure after close() (e.g. the ZIP
+      // encode step throwing) leaves the provider serving a closed
+      // connection until the user happens to hit another provider
+      // invalidation elsewhere.
+      if (dbClosed) ref.invalidate(databaseProvider);
       if (mounted) setState(() => _isBackingUp = false);
     }
   }
@@ -80,23 +86,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final db = ref.read(databaseProvider);
       await db.close();
 
-      final success = await BackupService.restoreFromBackup(zipPath);
+      final result = await BackupService.restoreFromBackup(zipPath);
 
+      // The database file on disk only changed on success — reopening
+      // the connection on every outcome is still correct and safe
+      // either way, since it just points the provider at whatever file
+      // is actually there now.
       ref.invalidate(databaseProvider);
       ref.invalidate(kakeiboMonthsProvider);
       ref.invalidate(settingsProvider);
 
       if (mounted) {
-        if (success) {
+        if (result == RestoreResult.success) {
           context.go('/');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Backup restored successfully')),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text(
-                    'Invalid backup file — ZIP must contain kakeibo.sqlite')),
+            SnackBar(content: Text(_restoreFailureMessage(result))),
           );
         }
       }
@@ -434,6 +442,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  String _restoreFailureMessage(RestoreResult result) {
+    return switch (result) {
+      RestoreResult.success => '', // unreachable — caller only uses this for failures
+      RestoreResult.zipMissingDatabase =>
+        'Invalid backup file — ZIP must contain kakeibo.sqlite',
+      RestoreResult.corruptDatabase =>
+        'This backup file is corrupted and cannot be restored',
+      RestoreResult.unexpectedSchema =>
+        'This file doesn\'t look like a Kakeibo backup',
+      RestoreResult.ioError => 'Could not read this backup file',
+    };
   }
 }
 
