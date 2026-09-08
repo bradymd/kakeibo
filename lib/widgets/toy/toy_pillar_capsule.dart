@@ -74,8 +74,42 @@ class ToyPillarCapsule extends StatelessWidget {
       ),
     );
 
-    if (onTap == null) return content;
-    return GestureDetector(onTap: onTap, child: content);
+    final tap = onTap;
+    if (tap == null) return content;
+    return _TappableScale(onTap: tap, child: content);
+  }
+}
+
+/// Simple press-down scale feedback for tiles with no hard shadow to
+/// animate (the capsule is a flat fill, unlike buttons/pills — see
+/// [ToyPressable] for the shadow-offset variant used elsewhere).
+class _TappableScale extends StatefulWidget {
+  const _TappableScale({required this.onTap, required this.child});
+
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  State<_TappableScale> createState() => _TappableScaleState();
+}
+
+class _TappableScaleState extends State<_TappableScale> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
   }
 }
 

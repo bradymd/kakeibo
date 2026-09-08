@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';
 
-/// One destination in the toy tab bar.
+/// One destination in the toy tab bar. These are the four things
+/// tracked *during* the month; the two bookend rituals (Start of
+/// Month, End of Month / Reflect) live in the hamburger menu instead —
+/// see `toy_menu_button.dart`.
 enum ToyTabDestination {
   month('/', '家計簿', 'Month'),
-  spend('/expenses', '支出', 'Spend'),
+  spend('/expenses', '支出', 'Spent'),
   fixed('/fixed-expenses', '固定費', 'Fixed'),
-  reflect('/reflection', '反省', 'Reflect');
+  income('/income', '収入', 'Income');
 
   const ToyTabDestination(this.path, this.japanese, this.label);
 
@@ -36,7 +39,7 @@ class ToyTabBar extends StatelessWidget {
   final ToyTabDestination current;
 
   /// Destinations to render disabled (README §5b: before a month is set
-  /// up, Spend and Reflect are disabled).
+  /// up, Spend and Income are disabled).
   final Set<ToyTabDestination> disabled;
 
   /// Per-destination path overrides, used only while the redesign is

@@ -22,6 +22,7 @@ class ToyScaffold extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.headlineFigure,
+    this.headerBottom,
     required this.body,
     this.tab,
     this.disabledTabs = const {},
@@ -40,6 +41,10 @@ class ToyScaffold extends StatelessWidget {
   /// Optional headline figure shown as a fourth header line (README:
   /// "the screen's headline figure, 32–34/900"), e.g. a running total.
   final String? headlineFigure;
+
+  /// Optional content below the subtitle/headline figure, e.g. a month
+  /// navigator. Mirrors `KakeiboScaffold.headerBottom`.
+  final Widget? headerBottom;
 
   final Widget body;
 
@@ -73,6 +78,7 @@ class ToyScaffold extends StatelessWidget {
             title: title,
             subtitle: subtitle,
             headlineFigure: headlineFigure,
+            headerBottom: headerBottom,
             showBackButton: showBackButton,
             onBack: onBack,
             trailing: trailing,
@@ -100,6 +106,7 @@ class _Header extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.headlineFigure,
+    required this.headerBottom,
     required this.showBackButton,
     required this.onBack,
     required this.trailing,
@@ -109,6 +116,7 @@ class _Header extends StatelessWidget {
   final String title;
   final String? subtitle;
   final String? headlineFigure;
+  final Widget? headerBottom;
   final bool showBackButton;
   final VoidCallback? onBack;
   final Widget? trailing;
@@ -179,6 +187,8 @@ class _Header extends StatelessWidget {
                       ),
                     ),
                   ],
+                  if (headerBottom != null)
+                    Padding(padding: const EdgeInsets.only(top: 12), child: headerBottom),
                 ],
               ),
             ),

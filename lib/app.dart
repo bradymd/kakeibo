@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kakeibo/models/pillar.dart';
 import 'package:kakeibo/providers/database_provider.dart';
 import 'package:kakeibo/screens/add_expense_screen.dart';
 import 'package:kakeibo/screens/all_expenses_screen.dart';
@@ -17,8 +18,19 @@ import 'package:kakeibo/screens/search_screen.dart';
 import 'package:kakeibo/screens/payday_settings_screen.dart';
 import 'package:kakeibo/screens/settings_screen.dart';
 import 'package:kakeibo/screens/setup_screen.dart';
+import 'package:kakeibo/screens/toy_about_screen.dart';
+import 'package:kakeibo/screens/toy_add_expense_screen.dart';
 import 'package:kakeibo/screens/toy_all_expenses_screen.dart';
+import 'package:kakeibo/screens/toy_fixed_expenses_screen.dart';
 import 'package:kakeibo/screens/toy_home_screen.dart';
+import 'package:kakeibo/screens/toy_import_screen.dart';
+import 'package:kakeibo/screens/toy_income_screen.dart';
+import 'package:kakeibo/screens/toy_payday_settings_screen.dart';
+import 'package:kakeibo/screens/toy_reflection_screen.dart';
+import 'package:kakeibo/screens/toy_rename_categories_screen.dart';
+import 'package:kakeibo/screens/toy_search_screen.dart';
+import 'package:kakeibo/screens/toy_settings_screen.dart';
+import 'package:kakeibo/screens/toy_setup_screen.dart';
 import 'package:kakeibo/services/auto_backup_manager.dart';
 import 'package:kakeibo/services/swipe_nav.dart';
 import 'package:kakeibo/theme/app_theme.dart';
@@ -47,7 +59,66 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/toy-expenses',
-      builder: (context, state) => const ToyAllExpensesScreen(),
+      builder: (context, state) {
+        final pillarName = state.uri.queryParameters['pillar'];
+        final pillar = pillarName == null
+            ? null
+            : Pillar.values.where((p) => p.name == pillarName).firstOrNull;
+        return ToyAllExpensesScreen(initialPillar: pillar);
+      },
+    ),
+    GoRoute(
+      path: '/toy-fixed-expenses',
+      builder: (context, state) => const ToyFixedExpensesScreen(),
+    ),
+    GoRoute(
+      path: '/toy-reflection',
+      builder: (context, state) => const ToyReflectionScreen(),
+    ),
+    GoRoute(
+      path: '/toy-setup',
+      builder: (context, state) => const ToySetupScreen(),
+    ),
+    GoRoute(
+      path: '/toy-income',
+      builder: (context, state) => const ToyIncomeScreen(),
+    ),
+    GoRoute(
+      path: '/toy-add-expense',
+      builder: (context, state) => const ToyAddExpenseScreen(),
+    ),
+    GoRoute(
+      path: '/toy-edit-expense/:id',
+      builder: (context, state) =>
+          ToyAddExpenseScreen(editExpenseId: state.pathParameters['id']),
+    ),
+    GoRoute(
+      path: '/toy-settings',
+      builder: (context, state) => const ToySettingsScreen(),
+    ),
+    GoRoute(
+      path: '/toy-about',
+      builder: (context, state) => const ToyAboutScreen(),
+    ),
+    GoRoute(
+      path: '/toy-search',
+      builder: (context, state) => const ToySearchScreen(),
+    ),
+    GoRoute(
+      path: '/toy-import-fixed-costs',
+      builder: (context, state) => const ToyImportScreen(importType: ImportType.fixedCosts),
+    ),
+    GoRoute(
+      path: '/toy-import-income',
+      builder: (context, state) => const ToyImportScreen(importType: ImportType.income),
+    ),
+    GoRoute(
+      path: '/toy-rename-categories',
+      builder: (context, state) => const ToyRenameCategoriesScreen(),
+    ),
+    GoRoute(
+      path: '/toy-payday-settings',
+      builder: (context, state) => const ToyPaydaySettingsScreen(),
     ),
     GoRoute(
       path: '/expenses',

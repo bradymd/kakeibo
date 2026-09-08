@@ -37,9 +37,9 @@ enum Pillar {
       case Pillar.needs:
         return 'Essentials: groceries, transport, household';
       case Pillar.wants:
-        return 'Nice-to-haves: dining out, hobbies, entertainment';
+        return 'Nice-to-haves: takeaways, coffee, cake, hobbies';
       case Pillar.culture:
-        return 'Self-improvement: books, courses, museums';
+        return 'Self-improvement and social: books, courses, museums, dining or drinking with others';
       case Pillar.unexpected:
         return 'Surprises: repairs, medical, gifts';
     }

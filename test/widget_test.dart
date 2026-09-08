@@ -7,6 +7,6 @@ void main() {
     await tester.pumpWidget(
       const ProviderScope(child: KakeiboApp()),
     );
-    expect(find.text('Kakeibo'), findsAny);
+    expect(find.text('家計簿 Kakeibo'), findsAny);
   });
 }

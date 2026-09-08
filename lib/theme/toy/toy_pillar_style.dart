@@ -67,9 +67,4 @@ extension ToyPillarStyle on Pillar {
         return ToyPillarColors.unexpectedFilterInk;
     }
   }
-
-  /// Japanese short label, e.g. 必要. Already on [Pillar.japanese]; kept
-  /// here as a passthrough so screens can import one extension for all
-  /// toy-theme pillar presentation needs.
-  String get toyJapanese => japanese;
 }

@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';
 
-/// The toy-themed header menu button. Lists the destinations the new
-/// [ToyTabBar] doesn't already cover. Home, Spend (Expenses), Fixed
-/// Costs and Reflect (End of Month) moved to always-visible tabs;
-/// Start of Month has no tab-bar slot of its own, so it stays here
-/// alongside Income, Settings and About (mirrors `KakeiboMenuButton`
-/// minus the four routes now reachable from the tab bar).
+/// The toy-themed header menu button. Month, Spend, Fixed and Income
+/// are the four things tracked *during* the month, so they live on the
+/// always-visible [ToyTabBar]. Start of Month and End of Month are the
+/// two bookend rituals that open and close a month — paired together
+/// here rather than split between a tab and a menu — followed by the
+/// genuinely infrequent Settings and About.
 enum _ToyMenuRoute {
-  income('/income', '収入', 'Income', Icons.account_balance_wallet_rounded),
-  setup('/setup', '月のはじめ', 'Start of Month', Icons.play_arrow_rounded),
-  settings('/settings', '設定', 'Settings and Tools', Icons.settings_rounded),
-  about('/about', 'について', 'About Kakeibo', Icons.info_outline_rounded);
+  setup('/toy-setup', '月のはじめ', 'Start of Month', Icons.play_arrow_rounded),
+  reflect('/toy-reflection', '反省', 'End of Month', Icons.self_improvement_rounded),
+  settings('/toy-settings', '設定', 'Settings and Tools', Icons.settings_rounded),
+  about('/toy-about', 'について', 'About Kakeibo', Icons.info_outline_rounded);
 
   const _ToyMenuRoute(this.path, this.japanese, this.label, this.icon);
   final String path;

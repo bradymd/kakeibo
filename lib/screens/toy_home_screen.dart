@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:kakeibo/models/kakeibo_month.dart';
 import 'package:kakeibo/models/pillar.dart';
 import 'package:kakeibo/providers/kakeibo_provider.dart';
 import 'package:kakeibo/providers/month_calculations_provider.dart';
@@ -18,8 +20,7 @@ import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 /// "Suggested order of work": get sign-off on this one screen before
 /// migrating the rest.
 ///
-/// Reuses the app's existing providers unchanged; the only addition is
-/// `dailyAllowanceProvider` in `month_calculations_provider.dart`.
+/// Reuses the app's existing providers unchanged.
 class ToyHomeScreen extends ConsumerWidget {
   const ToyHomeScreen({super.key});
 
@@ -37,34 +38,41 @@ class ToyHomeScreen extends ConsumerWidget {
     final displayMonth = MonthHelpers.formatMonthDisplay(year, month);
 
     final daysUntilPayday = ref.watch(daysUntilPaydayProvider);
+    final payday = ref.watch(currentPaydayProvider).valueOrNull;
 
     return ToyScaffold(
-      title: '家計簿ガチャ',
+      title: '家計簿 Kakeibo',
       subtitle: daysUntilPayday != null
-          ? '${displayMonth.toUpperCase()} ・ $daysUntilPayday ${daysUntilPayday == 1 ? 'day' : 'days'} to payday'
-          : displayMonth.toUpperCase(),
+          ? '$daysUntilPayday ${daysUntilPayday == 1 ? 'day' : 'days'} to payday'
+          : null,
+      headerBottom: Center(
+        child: ToyMonthNavigator(
+          displayText: displayMonth,
+          onPrevious: () => ref.read(currentMonthIdProvider.notifier).state =
+              MonthHelpers.getPrevMonthId(monthId),
+          onNext: () => ref.read(currentMonthIdProvider.notifier).state =
+              MonthHelpers.getNextMonthId(monthId),
+        ),
+      ),
       tab: ToyTabDestination.month,
-      // Fixed and Reflect have no converted screen yet — disabled
-      // rather than falling through to the old-style screens. Remove
-      // once they're built (see ToyTabBar.pathOverrides doc).
       disabledTabs: isSetup
-          ? const {ToyTabDestination.fixed, ToyTabDestination.reflect}
-          : const {
-              ToyTabDestination.spend,
-              ToyTabDestination.fixed,
-              ToyTabDestination.reflect,
-            },
-      tabPathOverrides: const {ToyTabDestination.spend: '/toy-expenses'},
+          ? const {}
+          : const {ToyTabDestination.spend, ToyTabDestination.income},
+      tabPathOverrides: const {
+        ToyTabDestination.spend: '/toy-expenses',
+        ToyTabDestination.fixed: '/toy-fixed-expenses',
+        ToyTabDestination.income: '/toy-income',
+      },
       trailing: const ToyMenuButton(),
       floatingActionButton:
-          isSetup ? ToyFab(onTap: () => context.push('/add-expense')) : null,
+          isSetup ? ToyFab(onTap: () => context.push('/toy-add-expense')) : null,
       body: GestureDetector(
         onHorizontalDragEnd: (details) {
           final velocity = details.primaryVelocity ?? 0;
           if (velocity > 300) {
-            SwipeNav.go(context, '/expenses', SlideDirection.left);
+            SwipeNav.go(context, '/toy-expenses', SlideDirection.left);
           } else if (velocity < -300) {
-            SwipeNav.go(context, '/fixed-expenses', SlideDirection.right);
+            SwipeNav.go(context, '/toy-fixed-expenses', SlideDirection.right);
           }
         },
         behavior: HitTestBehavior.translucent,
@@ -81,15 +89,24 @@ class ToyHomeScreen extends ConsumerWidget {
             final availableBudget = ref.watch(availableBudgetProvider);
             final totalSpent = ref.watch(totalSpentProvider);
             final disposableIncome = ref.watch(disposableIncomeProvider);
+            final fixedCostsTotal = ref.watch(fixedExpensesTotalProvider);
             final pillarTotals = ref.watch(pillarTotalsProvider);
-            final dailyAllowance = ref.watch(dailyAllowanceProvider);
             final idealPillarBudget = ref.watch(idealPillarBudgetProvider);
+            final recentExpenses = ref.watch(recentExpensesProvider);
 
+            // Payday-aware progress when a preset is configured — the
+            // financial month runs previous payday to this payday, not
+            // the calendar month (matches the original BudgetBar and
+            // what Payday Settings' own copy promises). Falls back to
+            // calendar days when no payday is set.
+            final financialProgress = ref.watch(financialProgressProvider);
             final now = DateTime.now();
-            final daysInMonth = DateTime(year, month + 1, 0).day;
-            final dayOfMonth = (year == now.year && month == now.month)
+            final calendarDaysInMonth = DateTime(year, month + 1, 0).day;
+            final calendarDayOfMonth = (year == now.year && month == now.month)
                 ? now.day
-                : (now.isAfter(DateTime(year, month + 1, 0)) ? daysInMonth : 1);
+                : (now.isAfter(DateTime(year, month + 1, 0)) ? calendarDaysInMonth : 1);
+            final dayOfMonth = financialProgress?.day ?? calendarDayOfMonth;
+            final daysInMonth = financialProgress?.total ?? calendarDaysInMonth;
             final goesLeft = daysInMonth - dayOfMonth;
 
             final remaining = availableBudget - totalSpent;
@@ -114,10 +131,8 @@ class ToyHomeScreen extends ConsumerWidget {
                 ),
                 children: [
                   _AllowanceCard(
-                    dailyAllowance: fmt(dailyAllowance),
-                    remainingInMachine: fmt(isOverBudget ? 0 : remaining),
-                    isOverBudget: isOverBudget,
-                    overspendAmount: isOverBudget ? fmt(-remaining) : null,
+                    totalIncome: currentMonth.income,
+                    fixedCostsTotal: fixedCostsTotal,
                     savingsGoal: currentMonth.savingsGoal,
                     disposableIncome: disposableIncome,
                     availableBudget: availableBudget,
@@ -127,16 +142,22 @@ class ToyHomeScreen extends ConsumerWidget {
                   const SizedBox(height: ToyMetrics.cardGap),
                   _CapsuleDomeCard(
                     pillarTotals: pillarTotals,
-                    totalSpent: totalSpent,
                     formatAmount: fmt,
                     dayOfMonth: dayOfMonth,
                     daysInMonth: daysInMonth,
                     goesLeft: goesLeft,
+                    paydayDayOfMonth: payday?.day,
                   ),
                   if (showWolfStrip) ...[
                     const SizedBox(height: ToyMetrics.cardGap),
                     _WolfStrip(overAmount: fmt(wantsOverPace)),
                   ],
+                  const SizedBox(height: ToyMetrics.cardGap),
+                  _RecentExpensesCard(
+                    expenses: recentExpenses,
+                    formatAmount: fmt,
+                    hasAnyExpenses: currentMonth.expenses.isNotEmpty,
+                  ),
                 ],
               ),
             );
@@ -149,10 +170,8 @@ class ToyHomeScreen extends ConsumerWidget {
 
 class _AllowanceCard extends StatelessWidget {
   const _AllowanceCard({
-    required this.dailyAllowance,
-    required this.remainingInMachine,
-    required this.isOverBudget,
-    required this.overspendAmount,
+    required this.totalIncome,
+    required this.fixedCostsTotal,
     required this.savingsGoal,
     required this.disposableIncome,
     required this.availableBudget,
@@ -160,10 +179,8 @@ class _AllowanceCard extends StatelessWidget {
     required this.formatAmount,
   });
 
-  final String dailyAllowance;
-  final String remainingInMachine;
-  final bool isOverBudget;
-  final String? overspendAmount;
+  final double totalIncome;
+  final double fixedCostsTotal;
   final double savingsGoal;
   final double disposableIncome;
   final double availableBudget;
@@ -173,43 +190,35 @@ class _AllowanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ToyCard(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: isOverBudget ? const Color(0xFFFFD6DE) : ToyColors.goldSoft,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              isOverBudget ? '一回 = 一日 ・ OUT OF GOES' : '一回 = 一日 ・ ONE GO, ONE DAY',
-              style: ToyTextStyles.label(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                color: isOverBudget ? const Color(0xFF8E1F3C) : ToyColors.goldInk,
-              ),
-            ),
+          _SummaryRow(
+            icon: Icons.trending_up_rounded,
+            iconColor: ToyColors.success,
+            label: 'Income (収入)',
+            amount: formatAmount(totalIncome),
+            amountColor: ToyColors.success,
+          ),
+          const SizedBox(height: 6),
+          _SummaryRow(
+            icon: Icons.receipt_long_rounded,
+            iconColor: ToyColors.danger,
+            label: 'Fixed Costs (固定費)',
+            amount: formatAmount(fixedCostsTotal),
+            amountColor: ToyColors.danger,
           ),
           const SizedBox(height: 10),
-          Text(
-            isOverBudget ? '£0.00' : dailyAllowance,
-            style: ToyTextStyles.hero(
-              fontSize: 52,
-              color: isOverBudget ? ToyColors.danger : ToyColors.brand,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            isOverBudget
-                ? 'You overspent by $overspendAmount'
-                : "today's allowance ・ $remainingInMachine left in the machine",
-            textAlign: TextAlign.center,
-            style: ToyTextStyles.label(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
-              color: ToyColors.muted2,
-            ),
+          const DashedDivider(),
+          const SizedBox(height: 10),
+          _SummaryRow(
+            icon: Icons.account_balance_wallet_rounded,
+            iconColor: ToyColors.brand,
+            label: 'Money to budget (予算)',
+            amount: formatAmount(disposableIncome),
+            amountColor: ToyColors.ink,
+            bold: true,
           ),
           const SizedBox(height: 14),
           ToyBudgetBar(
@@ -225,43 +234,75 @@ class _AllowanceCard extends StatelessWidget {
   }
 }
 
+class _SummaryRow extends StatelessWidget {
+  const _SummaryRow({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.amount,
+    required this.amountColor,
+    this.bold = false,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String amount;
+  final Color amountColor;
+  final bool bold;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: iconColor, size: bold ? 20 : 18),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: ToyTextStyles.label(
+              fontSize: 12,
+              fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+              color: bold ? ToyColors.ink : ToyColors.muted2,
+            ),
+          ),
+        ),
+        Text(
+          amount,
+          style: bold
+              ? ToyTextStyles.rowAmount(fontSize: 15, color: amountColor)
+              : ToyTextStyles.body(fontSize: 12.5, fontWeight: FontWeight.w600, color: amountColor),
+        ),
+      ],
+    );
+  }
+}
+
 class _CapsuleDomeCard extends StatelessWidget {
   const _CapsuleDomeCard({
     required this.pillarTotals,
-    required this.totalSpent,
     required this.formatAmount,
     required this.dayOfMonth,
     required this.daysInMonth,
     required this.goesLeft,
+    this.paydayDayOfMonth,
   });
 
   final Map<Pillar, double> pillarTotals;
-  final double totalSpent;
   final String Function(double) formatAmount;
   final int dayOfMonth;
   final int daysInMonth;
   final int goesLeft;
+  final int? paydayDayOfMonth;
 
   @override
   Widget build(BuildContext context) {
-    final monthProgress = daysInMonth > 0 ? dayOfMonth / daysInMonth : 0.0;
-
     return ToyCard(
       radius: 26,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text('四つの柱 ・ カプセル', style: ToyTextStyles.cardTitle()),
-              ),
-              Text(
-                '${formatAmount(totalSpent)} spent',
-                style: ToyTextStyles.label(fontSize: 11, fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
+          Text('四つの柱 Four Pillars', style: ToyTextStyles.cardTitle()),
           const SizedBox(height: 12),
           CapsuleDomeBackground(
             child: Padding(
@@ -274,28 +315,17 @@ class _CapsuleDomeCard extends StatelessWidget {
                       label: '${pillar.japanese} ${pillar.label}',
                       amountText: formatAmount(pillarTotals[pillar] ?? 0),
                       labelFontSize: 10.5,
+                      // A tab switch, not a push — same as tapping the
+                      // Spend tab yourself, just pre-filtered. Keeps
+                      // this consistent with every other tab move (no
+                      // stack depth created, so no back arrow needed).
+                      onTap: () => context.go('/toy-expenses?pillar=${pillar.name}'),
                     ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: SizedBox(
-              height: 12,
-              child: Stack(
-                children: [
-                  const ColoredBox(color: Color(0xFFF1E3E8)),
-                  FractionallySizedBox(
-                    widthFactor: monthProgress.clamp(0.0, 1.0),
-                    child: CustomPaint(painter: const _MonthProgressPainter()),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -309,35 +339,16 @@ class _CapsuleDomeCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 6),
+          ToyDayBlocks(
+            dayOfMonth: dayOfMonth,
+            daysInMonth: daysInMonth,
+            paydayDayOfMonth: paydayDayOfMonth,
+          ),
         ],
       ),
     );
   }
-}
-
-/// `repeating-linear-gradient(135deg,#FFD24C 0 8px,#FFC01F 8px 16px)`
-/// month-progress fill.
-class _MonthProgressPainter extends CustomPainter {
-  const _MonthProgressPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.save();
-    canvas.clipRect(Offset.zero & size);
-    canvas.drawRect(Offset.zero & size, Paint()..color = ToyColors.gold);
-    final dark = Paint()..color = const Color(0xFFFFC01F);
-    final diagonal = size.width + size.height;
-    canvas.translate(size.width / 2, size.height / 2);
-    canvas.rotate(135 * 3.1415926535 / 180);
-    canvas.translate(-diagonal, -diagonal);
-    for (double x = 0; x < diagonal * 2; x += 16) {
-      canvas.drawRect(Rect.fromLTWH(x, 0, 8, diagonal * 2), dark);
-    }
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant _MonthProgressPainter oldDelegate) => false;
 }
 
 class _WolfStrip extends StatelessWidget {
@@ -367,6 +378,76 @@ class _WolfStrip extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Recent Expenses — kept from the original dashboard (`home_screen.dart`)
+/// so people can still browse their spending at a glance; the handoff
+/// README's screen spec didn't carry this section forward, but dropping
+/// it was an omission, not a deliberate redesign choice.
+class _RecentExpensesCard extends ConsumerWidget {
+  const _RecentExpensesCard({
+    required this.expenses,
+    required this.formatAmount,
+    required this.hasAnyExpenses,
+  });
+
+  final List<KakeiboExpense> expenses;
+  final String Function(double) formatAmount;
+  final bool hasAnyExpenses;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ToyCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text('Recent Expenses', style: ToyTextStyles.cardTitle(fontSize: 15)),
+                ),
+                if (hasAnyExpenses)
+                  GestureDetector(
+                    onTap: () => context.push('/toy-expenses'),
+                    child: Text(
+                      'See all',
+                      style: ToyTextStyles.label(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: ToyColors.brand,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (expenses.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+              child: Text(
+                'No expenses yet. Tap ＋ to add one!',
+                style: ToyTextStyles.body(),
+              ),
+            )
+          else
+            for (var i = 0; i < expenses.length; i++) ...[
+              if (i > 0) const DashedDivider(),
+              ToyRow(
+                title: expenses[i].description,
+                meta:
+                    '${expenses[i].pillar.label} ${expenses[i].pillar.japanese} ・ ${DateFormat('d MMM').format(DateTime.parse(expenses[i].date))}',
+                amountText: formatAmount(expenses[i].amount),
+                leading: ToyPillarDot(color: expenses[i].pillar.toyFill),
+                onTap: () => context.push('/toy-edit-expense/${expenses[i].id}'),
+              ),
+            ],
         ],
       ),
     );
@@ -417,11 +498,11 @@ class _NotSetUpState extends StatelessWidget {
             const SizedBox(height: 20),
             ToyPrimaryButton(
               label: 'はじめる ・ Set Up Month',
-              onTap: () => context.push('/setup'),
+              onTap: () => context.push('/toy-setup'),
             ),
             const SizedBox(height: 12),
             GestureDetector(
-              onTap: () => context.push('/import-fixed-costs'),
+              onTap: () => context.push('/toy-import-fixed-costs'),
               child: Text(
                 'Copy everything from January',
                 style: ToyTextStyles.label(

@@ -19,7 +19,11 @@ import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 /// `recentExpensesProvider` (which caps at 5) since this screen shows
 /// every expense in the month.
 class ToyAllExpensesScreen extends ConsumerStatefulWidget {
-  const ToyAllExpensesScreen({super.key});
+  const ToyAllExpensesScreen({super.key, this.initialPillar});
+
+  /// Pillar to pre-filter to, e.g. when arriving from a tapped capsule
+  /// on the dashboard. Null shows all pillars (the default).
+  final Pillar? initialPillar;
 
   @override
   ConsumerState<ToyAllExpensesScreen> createState() => _ToyAllExpensesScreenState();
@@ -27,6 +31,12 @@ class ToyAllExpensesScreen extends ConsumerStatefulWidget {
 
 class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
   Pillar? _filterPillar;
+
+  @override
+  void initState() {
+    super.initState();
+    _filterPillar = widget.initialPillar;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,26 +73,25 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
         final filteredTotal = expenses.fold(0.0, (sum, e) => sum + e.amount);
 
         return ToyScaffold(
-          title: '支出 Spend',
+          title: '支出 Spent',
           subtitle: displayMonth,
           headlineFigure:
               '${fmt(filteredTotal)}   ${expenses.length} ${expenses.length == 1 ? 'entry' : 'entries'}',
           tab: ToyTabDestination.spend,
-          // Fixed and Reflect have no converted screen yet (see
-          // ToyTabBar.pathOverrides doc); Month routes to its preview
-          // rather than the real '/' so review can move between the
-          // built screens without falling through to the old ones.
-          disabledTabs: const {ToyTabDestination.fixed, ToyTabDestination.reflect},
-          tabPathOverrides: const {ToyTabDestination.month: '/toy-dashboard'},
+          tabPathOverrides: const {
+            ToyTabDestination.month: '/toy-dashboard',
+            ToyTabDestination.fixed: '/toy-fixed-expenses',
+            ToyTabDestination.income: '/toy-income',
+          },
           trailing: const ToyMenuButton(),
-          floatingActionButton: ToyFab(onTap: () => context.push('/add-expense')),
+          floatingActionButton: ToyFab(onTap: () => context.push('/toy-add-expense')),
           body: GestureDetector(
             onHorizontalDragEnd: (details) {
               final velocity = details.primaryVelocity ?? 0;
               if (velocity > 300) {
-                SwipeNav.go(context, '/', SlideDirection.right);
+                SwipeNav.go(context, '/toy-dashboard', SlideDirection.right);
               } else if (velocity < -300) {
-                SwipeNav.go(context, '/fixed-expenses', SlideDirection.left);
+                SwipeNav.go(context, '/toy-fixed-expenses', SlideDirection.left);
               }
             },
             behavior: HitTestBehavior.translucent,
@@ -91,14 +100,14 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
                 ToyCapsuleFilterRow(
                   children: [
                     ToyCapsuleFilter(
-                      label: 'All',
+                      label: 'すべて All',
                       selected: _filterPillar == null,
                       textColor: ToyColors.ink,
                       onTap: () => setState(() => _filterPillar = null),
                     ),
                     for (final pillar in Pillar.values)
                       ToyCapsuleFilter(
-                        label: pillar.toyJapanese,
+                        label: '${pillar.japanese} ${pillar.label}',
                         selected: _filterPillar == pillar,
                         textColor: pillar.toyFilterInk,
                         // Tapping the already-selected pillar is a no-op —
@@ -110,7 +119,7 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
                 Expanded(
                   child: expenses.isEmpty
                       ? _EmptyState(filtered: _filterPillar != null)
-                      : Padding(
+                      : SingleChildScrollView(
                           padding: const EdgeInsets.fromLTRB(
                             ToyMetrics.screenPaddingH,
                             0,
@@ -142,7 +151,7 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
                                           '${expenses[i].pillar.label} ${expenses[i].pillar.japanese} ・ ${DateFormat('d MMM').format(DateTime.parse(expenses[i].date))}',
                                       amountText: fmt(expenses[i].amount),
                                       leading: ToyPillarDot(color: expenses[i].pillar.toyFill),
-                                      onTap: () => context.push('/edit-expense/${expenses[i].id}'),
+                                      onTap: () => context.push('/toy-edit-expense/${expenses[i].id}'),
                                     ),
                                   ),
                                 ],
