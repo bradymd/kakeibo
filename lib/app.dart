@@ -153,7 +153,7 @@ class _KakeiboAppState extends ConsumerState<KakeiboApp> {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Kakeibo',
-      theme: AppTheme.light,
+      theme: AppTheme.current,
       routerConfig: _router,
       debugShowCheckedModeBanner: false,
     );

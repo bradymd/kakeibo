@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kakeibo/theme/app_colors.dart';
+import 'package:kakeibo/theme/theme_flag.dart';
+import 'package:kakeibo/theme/toy/toy_theme.dart';
 
 class AppTheme {
   const AppTheme._();
+
+  /// The theme actually applied by `MaterialApp`. Gated by [kToyTheme]
+  /// so the redesign's *look* can be switched off without a code revert
+  /// (see `ROLLBACK_AND_DATA.md`). Structural screen changes are not
+  /// covered by this flag.
+  static ThemeData get current => kToyTheme ? ToyTheme.light : light;
 
   static ThemeData get light {
     return ThemeData(
