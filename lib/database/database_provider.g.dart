@@ -500,6 +500,17 @@ class $ExpensesTable extends Expenses
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -510,6 +521,7 @@ class $ExpensesTable extends Expenses
     pillar,
     notes,
     createdAt,
+    category,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -583,6 +595,12 @@ class $ExpensesTable extends Expenses
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    }
     return context;
   }
 
@@ -624,6 +642,10 @@ class $ExpensesTable extends Expenses
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
       )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      ),
     );
   }
 
@@ -642,6 +664,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
   final String pillar;
   final String notes;
   final int createdAt;
+  final String? category;
   const ExpenseRow({
     required this.id,
     required this.monthId,
@@ -651,6 +674,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
     required this.pillar,
     required this.notes,
     required this.createdAt,
+    this.category,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -663,6 +687,9 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
     map['pillar'] = Variable<String>(pillar);
     map['notes'] = Variable<String>(notes);
     map['created_at'] = Variable<int>(createdAt);
+    if (!nullToAbsent || category != null) {
+      map['category'] = Variable<String>(category);
+    }
     return map;
   }
 
@@ -676,6 +703,9 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
       pillar: Value(pillar),
       notes: Value(notes),
       createdAt: Value(createdAt),
+      category: category == null && nullToAbsent
+          ? const Value.absent()
+          : Value(category),
     );
   }
 
@@ -693,6 +723,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
       pillar: serializer.fromJson<String>(json['pillar']),
       notes: serializer.fromJson<String>(json['notes']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
+      category: serializer.fromJson<String?>(json['category']),
     );
   }
   @override
@@ -707,6 +738,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
       'pillar': serializer.toJson<String>(pillar),
       'notes': serializer.toJson<String>(notes),
       'createdAt': serializer.toJson<int>(createdAt),
+      'category': serializer.toJson<String?>(category),
     };
   }
 
@@ -719,6 +751,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
     String? pillar,
     String? notes,
     int? createdAt,
+    Value<String?> category = const Value.absent(),
   }) => ExpenseRow(
     id: id ?? this.id,
     monthId: monthId ?? this.monthId,
@@ -728,6 +761,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
     pillar: pillar ?? this.pillar,
     notes: notes ?? this.notes,
     createdAt: createdAt ?? this.createdAt,
+    category: category.present ? category.value : this.category,
   );
   ExpenseRow copyWithCompanion(ExpensesCompanion data) {
     return ExpenseRow(
@@ -741,6 +775,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
       pillar: data.pillar.present ? data.pillar.value : this.pillar,
       notes: data.notes.present ? data.notes.value : this.notes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      category: data.category.present ? data.category.value : this.category,
     );
   }
 
@@ -754,7 +789,8 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
           ..write('amount: $amount, ')
           ..write('pillar: $pillar, ')
           ..write('notes: $notes, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('category: $category')
           ..write(')'))
         .toString();
   }
@@ -769,6 +805,7 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
     pillar,
     notes,
     createdAt,
+    category,
   );
   @override
   bool operator ==(Object other) =>
@@ -781,7 +818,8 @@ class ExpenseRow extends DataClass implements Insertable<ExpenseRow> {
           other.amount == this.amount &&
           other.pillar == this.pillar &&
           other.notes == this.notes &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.category == this.category);
 }
 
 class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
@@ -793,6 +831,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
   final Value<String> pillar;
   final Value<String> notes;
   final Value<int> createdAt;
+  final Value<String?> category;
   final Value<int> rowid;
   const ExpensesCompanion({
     this.id = const Value.absent(),
@@ -803,6 +842,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
     this.pillar = const Value.absent(),
     this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.category = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ExpensesCompanion.insert({
@@ -814,6 +854,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
     required String pillar,
     this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.category = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        monthId = Value(monthId),
@@ -830,6 +871,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
     Expression<String>? pillar,
     Expression<String>? notes,
     Expression<int>? createdAt,
+    Expression<String>? category,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -841,6 +883,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
       if (pillar != null) 'pillar': pillar,
       if (notes != null) 'notes': notes,
       if (createdAt != null) 'created_at': createdAt,
+      if (category != null) 'category': category,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -854,6 +897,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
     Value<String>? pillar,
     Value<String>? notes,
     Value<int>? createdAt,
+    Value<String?>? category,
     Value<int>? rowid,
   }) {
     return ExpensesCompanion(
@@ -865,6 +909,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
       pillar: pillar ?? this.pillar,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
+      category: category ?? this.category,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -896,6 +941,9 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -913,6 +961,7 @@ class ExpensesCompanion extends UpdateCompanion<ExpenseRow> {
           ..write('pillar: $pillar, ')
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
+          ..write('category: $category, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1841,6 +1890,281 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingRow> {
   }
 }
 
+class $ExpenseCategorySuggestionsTable extends ExpenseCategorySuggestions
+    with
+        TableInfo<
+          $ExpenseCategorySuggestionsTable,
+          ExpenseCategorySuggestionRow
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExpenseCategorySuggestionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _hiddenMeta = const VerificationMeta('hidden');
+  @override
+  late final GeneratedColumn<bool> hidden = GeneratedColumn<bool>(
+    'hidden',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("hidden" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [name, sortOrder, hidden];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'expense_category_suggestions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ExpenseCategorySuggestionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    if (data.containsKey('hidden')) {
+      context.handle(
+        _hiddenMeta,
+        hidden.isAcceptableOrUnknown(data['hidden']!, _hiddenMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {name};
+  @override
+  ExpenseCategorySuggestionRow map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExpenseCategorySuggestionRow(
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      hidden: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}hidden'],
+      )!,
+    );
+  }
+
+  @override
+  $ExpenseCategorySuggestionsTable createAlias(String alias) {
+    return $ExpenseCategorySuggestionsTable(attachedDatabase, alias);
+  }
+}
+
+class ExpenseCategorySuggestionRow extends DataClass
+    implements Insertable<ExpenseCategorySuggestionRow> {
+  final String name;
+  final int sortOrder;
+  final bool hidden;
+  const ExpenseCategorySuggestionRow({
+    required this.name,
+    required this.sortOrder,
+    required this.hidden,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['name'] = Variable<String>(name);
+    map['sort_order'] = Variable<int>(sortOrder);
+    map['hidden'] = Variable<bool>(hidden);
+    return map;
+  }
+
+  ExpenseCategorySuggestionsCompanion toCompanion(bool nullToAbsent) {
+    return ExpenseCategorySuggestionsCompanion(
+      name: Value(name),
+      sortOrder: Value(sortOrder),
+      hidden: Value(hidden),
+    );
+  }
+
+  factory ExpenseCategorySuggestionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExpenseCategorySuggestionRow(
+      name: serializer.fromJson<String>(json['name']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      hidden: serializer.fromJson<bool>(json['hidden']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'name': serializer.toJson<String>(name),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'hidden': serializer.toJson<bool>(hidden),
+    };
+  }
+
+  ExpenseCategorySuggestionRow copyWith({
+    String? name,
+    int? sortOrder,
+    bool? hidden,
+  }) => ExpenseCategorySuggestionRow(
+    name: name ?? this.name,
+    sortOrder: sortOrder ?? this.sortOrder,
+    hidden: hidden ?? this.hidden,
+  );
+  ExpenseCategorySuggestionRow copyWithCompanion(
+    ExpenseCategorySuggestionsCompanion data,
+  ) {
+    return ExpenseCategorySuggestionRow(
+      name: data.name.present ? data.name.value : this.name,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      hidden: data.hidden.present ? data.hidden.value : this.hidden,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExpenseCategorySuggestionRow(')
+          ..write('name: $name, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('hidden: $hidden')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(name, sortOrder, hidden);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExpenseCategorySuggestionRow &&
+          other.name == this.name &&
+          other.sortOrder == this.sortOrder &&
+          other.hidden == this.hidden);
+}
+
+class ExpenseCategorySuggestionsCompanion
+    extends UpdateCompanion<ExpenseCategorySuggestionRow> {
+  final Value<String> name;
+  final Value<int> sortOrder;
+  final Value<bool> hidden;
+  final Value<int> rowid;
+  const ExpenseCategorySuggestionsCompanion({
+    this.name = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.hidden = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ExpenseCategorySuggestionsCompanion.insert({
+    required String name,
+    this.sortOrder = const Value.absent(),
+    this.hidden = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : name = Value(name);
+  static Insertable<ExpenseCategorySuggestionRow> custom({
+    Expression<String>? name,
+    Expression<int>? sortOrder,
+    Expression<bool>? hidden,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (name != null) 'name': name,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (hidden != null) 'hidden': hidden,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ExpenseCategorySuggestionsCompanion copyWith({
+    Value<String>? name,
+    Value<int>? sortOrder,
+    Value<bool>? hidden,
+    Value<int>? rowid,
+  }) {
+    return ExpenseCategorySuggestionsCompanion(
+      name: name ?? this.name,
+      sortOrder: sortOrder ?? this.sortOrder,
+      hidden: hidden ?? this.hidden,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (hidden.present) {
+      map['hidden'] = Variable<bool>(hidden.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExpenseCategorySuggestionsCompanion(')
+          ..write('name: $name, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('hidden: $hidden, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1849,6 +2173,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $FixedExpensesTable fixedExpenses = $FixedExpensesTable(this);
   late final $IncomeSourcesTable incomeSources = $IncomeSourcesTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
+  late final $ExpenseCategorySuggestionsTable expenseCategorySuggestions =
+      $ExpenseCategorySuggestionsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1859,6 +2185,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     fixedExpenses,
     incomeSources,
     appSettings,
+    expenseCategorySuggestions,
   ];
 }
 
@@ -2404,6 +2731,7 @@ typedef $$ExpensesTableCreateCompanionBuilder =
       required String pillar,
       Value<String> notes,
       Value<int> createdAt,
+      Value<String?> category,
       Value<int> rowid,
     });
 typedef $$ExpensesTableUpdateCompanionBuilder =
@@ -2416,6 +2744,7 @@ typedef $$ExpensesTableUpdateCompanionBuilder =
       Value<String> pillar,
       Value<String> notes,
       Value<int> createdAt,
+      Value<String?> category,
       Value<int> rowid,
     });
 
@@ -2487,6 +2816,11 @@ class $$ExpensesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$KakeiboMonthsTableFilterComposer get monthId {
     final $$KakeiboMonthsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -2555,6 +2889,11 @@ class $$ExpensesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$KakeiboMonthsTableOrderingComposer get monthId {
     final $$KakeiboMonthsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -2610,6 +2949,9 @@ class $$ExpensesTableAnnotationComposer
 
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
 
   $$KakeiboMonthsTableAnnotationComposer get monthId {
     final $$KakeiboMonthsTableAnnotationComposer composer = $composerBuilder(
@@ -2671,6 +3013,7 @@ class $$ExpensesTableTableManager
                 Value<String> pillar = const Value.absent(),
                 Value<String> notes = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
+                Value<String?> category = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExpensesCompanion(
                 id: id,
@@ -2681,6 +3024,7 @@ class $$ExpensesTableTableManager
                 pillar: pillar,
                 notes: notes,
                 createdAt: createdAt,
+                category: category,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2693,6 +3037,7 @@ class $$ExpensesTableTableManager
                 required String pillar,
                 Value<String> notes = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
+                Value<String?> category = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExpensesCompanion.insert(
                 id: id,
@@ -2703,6 +3048,7 @@ class $$ExpensesTableTableManager
                 pillar: pillar,
                 notes: notes,
                 createdAt: createdAt,
+                category: category,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3559,6 +3905,187 @@ typedef $$AppSettingsTableProcessedTableManager =
       AppSettingRow,
       PrefetchHooks Function()
     >;
+typedef $$ExpenseCategorySuggestionsTableCreateCompanionBuilder =
+    ExpenseCategorySuggestionsCompanion Function({
+      required String name,
+      Value<int> sortOrder,
+      Value<bool> hidden,
+      Value<int> rowid,
+    });
+typedef $$ExpenseCategorySuggestionsTableUpdateCompanionBuilder =
+    ExpenseCategorySuggestionsCompanion Function({
+      Value<String> name,
+      Value<int> sortOrder,
+      Value<bool> hidden,
+      Value<int> rowid,
+    });
+
+class $$ExpenseCategorySuggestionsTableFilterComposer
+    extends Composer<_$AppDatabase, $ExpenseCategorySuggestionsTable> {
+  $$ExpenseCategorySuggestionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get hidden => $composableBuilder(
+    column: $table.hidden,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ExpenseCategorySuggestionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExpenseCategorySuggestionsTable> {
+  $$ExpenseCategorySuggestionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get hidden => $composableBuilder(
+    column: $table.hidden,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ExpenseCategorySuggestionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExpenseCategorySuggestionsTable> {
+  $$ExpenseCategorySuggestionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<bool> get hidden =>
+      $composableBuilder(column: $table.hidden, builder: (column) => column);
+}
+
+class $$ExpenseCategorySuggestionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ExpenseCategorySuggestionsTable,
+          ExpenseCategorySuggestionRow,
+          $$ExpenseCategorySuggestionsTableFilterComposer,
+          $$ExpenseCategorySuggestionsTableOrderingComposer,
+          $$ExpenseCategorySuggestionsTableAnnotationComposer,
+          $$ExpenseCategorySuggestionsTableCreateCompanionBuilder,
+          $$ExpenseCategorySuggestionsTableUpdateCompanionBuilder,
+          (
+            ExpenseCategorySuggestionRow,
+            BaseReferences<
+              _$AppDatabase,
+              $ExpenseCategorySuggestionsTable,
+              ExpenseCategorySuggestionRow
+            >,
+          ),
+          ExpenseCategorySuggestionRow,
+          PrefetchHooks Function()
+        > {
+  $$ExpenseCategorySuggestionsTableTableManager(
+    _$AppDatabase db,
+    $ExpenseCategorySuggestionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExpenseCategorySuggestionsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$ExpenseCategorySuggestionsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ExpenseCategorySuggestionsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> name = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<bool> hidden = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExpenseCategorySuggestionsCompanion(
+                name: name,
+                sortOrder: sortOrder,
+                hidden: hidden,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String name,
+                Value<int> sortOrder = const Value.absent(),
+                Value<bool> hidden = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExpenseCategorySuggestionsCompanion.insert(
+                name: name,
+                sortOrder: sortOrder,
+                hidden: hidden,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ExpenseCategorySuggestionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ExpenseCategorySuggestionsTable,
+      ExpenseCategorySuggestionRow,
+      $$ExpenseCategorySuggestionsTableFilterComposer,
+      $$ExpenseCategorySuggestionsTableOrderingComposer,
+      $$ExpenseCategorySuggestionsTableAnnotationComposer,
+      $$ExpenseCategorySuggestionsTableCreateCompanionBuilder,
+      $$ExpenseCategorySuggestionsTableUpdateCompanionBuilder,
+      (
+        ExpenseCategorySuggestionRow,
+        BaseReferences<
+          _$AppDatabase,
+          $ExpenseCategorySuggestionsTable,
+          ExpenseCategorySuggestionRow
+        >,
+      ),
+      ExpenseCategorySuggestionRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3573,4 +4100,10 @@ class $AppDatabaseManager {
       $$IncomeSourcesTableTableManager(_db, _db.incomeSources);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
+  $$ExpenseCategorySuggestionsTableTableManager
+  get expenseCategorySuggestions =>
+      $$ExpenseCategorySuggestionsTableTableManager(
+        _db,
+        _db.expenseCategorySuggestions,
+      );
 }

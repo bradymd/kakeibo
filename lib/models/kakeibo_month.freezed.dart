@@ -597,7 +597,11 @@ mixin _$KakeiboExpense {
   double get amount => throw _privateConstructorUsedError;
   Pillar get pillar => throw _privateConstructorUsedError;
   String get notes => throw _privateConstructorUsedError;
-  int get createdAt => throw _privateConstructorUsedError;
+  int get createdAt =>
+      throw _privateConstructorUsedError; // Optional, free-text, never enforced. Empty string means
+  // "not categorised" (mirrors the nullable-in-db, empty-in-model
+  // convention already used for `notes`).
+  String get category => throw _privateConstructorUsedError;
 
   /// Serializes this KakeiboExpense to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -624,6 +628,7 @@ abstract class $KakeiboExpenseCopyWith<$Res> {
     Pillar pillar,
     String notes,
     int createdAt,
+    String category,
   });
 }
 
@@ -649,6 +654,7 @@ class _$KakeiboExpenseCopyWithImpl<$Res, $Val extends KakeiboExpense>
     Object? pillar = null,
     Object? notes = null,
     Object? createdAt = null,
+    Object? category = null,
   }) {
     return _then(
       _value.copyWith(
@@ -680,6 +686,10 @@ class _$KakeiboExpenseCopyWithImpl<$Res, $Val extends KakeiboExpense>
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
                       as int,
+            category: null == category
+                ? _value.category
+                : category // ignore: cast_nullable_to_non_nullable
+                      as String,
           )
           as $Val,
     );
@@ -703,6 +713,7 @@ abstract class _$$KakeiboExpenseImplCopyWith<$Res>
     Pillar pillar,
     String notes,
     int createdAt,
+    String category,
   });
 }
 
@@ -727,6 +738,7 @@ class __$$KakeiboExpenseImplCopyWithImpl<$Res>
     Object? pillar = null,
     Object? notes = null,
     Object? createdAt = null,
+    Object? category = null,
   }) {
     return _then(
       _$KakeiboExpenseImpl(
@@ -758,6 +770,10 @@ class __$$KakeiboExpenseImplCopyWithImpl<$Res>
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
                   as int,
+        category: null == category
+            ? _value.category
+            : category // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -774,6 +790,7 @@ class _$KakeiboExpenseImpl implements _KakeiboExpense {
     required this.pillar,
     this.notes = '',
     this.createdAt = 0,
+    this.category = '',
   });
 
   factory _$KakeiboExpenseImpl.fromJson(Map<String, dynamic> json) =>
@@ -795,10 +812,16 @@ class _$KakeiboExpenseImpl implements _KakeiboExpense {
   @override
   @JsonKey()
   final int createdAt;
+  // Optional, free-text, never enforced. Empty string means
+  // "not categorised" (mirrors the nullable-in-db, empty-in-model
+  // convention already used for `notes`).
+  @override
+  @JsonKey()
+  final String category;
 
   @override
   String toString() {
-    return 'KakeiboExpense(id: $id, date: $date, description: $description, amount: $amount, pillar: $pillar, notes: $notes, createdAt: $createdAt)';
+    return 'KakeiboExpense(id: $id, date: $date, description: $description, amount: $amount, pillar: $pillar, notes: $notes, createdAt: $createdAt, category: $category)';
   }
 
   @override
@@ -814,7 +837,9 @@ class _$KakeiboExpenseImpl implements _KakeiboExpense {
             (identical(other.pillar, pillar) || other.pillar == pillar) &&
             (identical(other.notes, notes) || other.notes == notes) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.category, category) ||
+                other.category == category));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -828,6 +853,7 @@ class _$KakeiboExpenseImpl implements _KakeiboExpense {
     pillar,
     notes,
     createdAt,
+    category,
   );
 
   /// Create a copy of KakeiboExpense
@@ -856,6 +882,7 @@ abstract class _KakeiboExpense implements KakeiboExpense {
     required final Pillar pillar,
     final String notes,
     final int createdAt,
+    final String category,
   }) = _$KakeiboExpenseImpl;
 
   factory _KakeiboExpense.fromJson(Map<String, dynamic> json) =
@@ -874,7 +901,11 @@ abstract class _KakeiboExpense implements KakeiboExpense {
   @override
   String get notes;
   @override
-  int get createdAt;
+  int get createdAt; // Optional, free-text, never enforced. Empty string means
+  // "not categorised" (mirrors the nullable-in-db, empty-in-model
+  // convention already used for `notes`).
+  @override
+  String get category;
 
   /// Create a copy of KakeiboExpense
   /// with the given fields replaced by the non-null parameter values.

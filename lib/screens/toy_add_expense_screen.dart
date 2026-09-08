@@ -32,6 +32,7 @@ class ToyAddExpenseScreen extends ConsumerStatefulWidget {
 class _ToyAddExpenseScreenState extends ConsumerState<ToyAddExpenseScreen> {
   final _amountController = TextEditingController();
   final _descController = TextEditingController();
+  final _categoryController = TextEditingController();
   final _notesController = TextEditingController();
   Pillar? _selectedPillar = Pillar.needs;
   String _date = todayIso();
@@ -74,6 +75,7 @@ class _ToyAddExpenseScreenState extends ConsumerState<ToyAddExpenseScreen> {
     _amountController.text = expense.amount.toStringAsFixed(2);
     _selectedPillar = expense.pillar;
     _descController.text = expense.description;
+    _categoryController.text = expense.category;
     _notesController.text = expense.notes;
     _date = expense.date;
   }
@@ -82,6 +84,7 @@ class _ToyAddExpenseScreenState extends ConsumerState<ToyAddExpenseScreen> {
   void dispose() {
     _amountController.dispose();
     _descController.dispose();
+    _categoryController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -102,6 +105,7 @@ class _ToyAddExpenseScreenState extends ConsumerState<ToyAddExpenseScreen> {
     final amount = double.tryParse(_amountController.text) ?? 0;
     return amount != _editing!.amount ||
         _descController.text.trim() != _editing!.description ||
+        _categoryController.text.trim() != _editing!.category ||
         _notesController.text.trim() != _editing!.notes ||
         _selectedPillar != _editing!.pillar ||
         _date != _editing!.date;
@@ -319,6 +323,11 @@ class _ToyAddExpenseScreenState extends ConsumerState<ToyAddExpenseScreen> {
                 ],
               ),
               const SizedBox(height: ToyMetrics.cardGap),
+              _CategoryField(
+                controller: _categoryController,
+                onChanged: () => setState(() {}),
+              ),
+              const SizedBox(height: ToyMetrics.cardGap),
               _FieldPill(
                 child: TextField(
                   controller: _notesController,
@@ -345,29 +354,34 @@ class _ToyAddExpenseScreenState extends ConsumerState<ToyAddExpenseScreen> {
                     ? () async {
                         final amount =
                             double.tryParse(_amountController.text) ?? 0;
+                        final category = _categoryController.text.trim();
+                        final notifier =
+                            ref.read(kakeiboMonthsProvider.notifier);
+                        if (category.isNotEmpty) {
+                          await notifier
+                              .addExpenseCategorySuggestion(category);
+                        }
                         if (isEditing) {
-                          await ref
-                              .read(kakeiboMonthsProvider.notifier)
-                              .updateExpense(
-                                _editing!.copyWith(
-                                  description: _descController.text.trim(),
-                                  amount: amount,
-                                  pillar: _selectedPillar!,
-                                  date: _date,
-                                  notes: _notesController.text.trim(),
-                                ),
-                              );
+                          await notifier.updateExpense(
+                            _editing!.copyWith(
+                              description: _descController.text.trim(),
+                              amount: amount,
+                              pillar: _selectedPillar!,
+                              date: _date,
+                              notes: _notesController.text.trim(),
+                              category: category,
+                            ),
+                          );
                         } else {
-                          await ref
-                              .read(kakeiboMonthsProvider.notifier)
-                              .addExpense(
-                                monthId: monthId,
-                                date: _date,
-                                description: _descController.text.trim(),
-                                amount: amount,
-                                pillarName: _selectedPillar!.name,
-                                notes: _notesController.text.trim(),
-                              );
+                          await notifier.addExpense(
+                            monthId: monthId,
+                            date: _date,
+                            description: _descController.text.trim(),
+                            amount: amount,
+                            pillarName: _selectedPillar!.name,
+                            notes: _notesController.text.trim(),
+                            category: category,
+                          );
                         }
                         if (context.mounted) context.pop();
                       }
@@ -429,6 +443,72 @@ class _ToyAddExpenseScreenState extends ConsumerState<ToyAddExpenseScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Optional Category field, its own line between Description and Notes.
+/// Purely free-text -- typing a name that isn't an existing suggestion is
+/// fine and just adds a new one on save. Chips below the field are tappable
+/// shortcuts into the same controller, not a constraint on what can be
+/// typed.
+class _CategoryField extends ConsumerWidget {
+  const _CategoryField({required this.controller, required this.onChanged});
+
+  final TextEditingController controller;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final suggestionsAsync = ref.watch(expenseCategorySuggestionsProvider);
+    final suggestions = suggestionsAsync.valueOrNull ?? const <String>[];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _FieldPill(
+          child: TextField(
+            controller: controller,
+            onChanged: (_) => onChanged(),
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              hintText: 'Category (optional)',
+              hintStyle: ToyTextStyles.rowTitle(
+                fontSize: 13,
+                color: ToyColors.placeholder,
+              ),
+              isDense: true,
+            ),
+            style: ToyTextStyles.rowTitle(fontSize: 13),
+            textCapitalization: TextCapitalization.sentences,
+          ),
+        ),
+        if (suggestions.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 32,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: suggestions.length,
+              separatorBuilder: (context, i) => const SizedBox(width: 6),
+              itemBuilder: (context, i) {
+                final cat = suggestions[i];
+                final selected = controller.text.trim() == cat;
+                return ToyCapsuleButton(
+                  label: cat,
+                  fillColor: selected ? ToyColors.brand : ToyColors.bg,
+                  shadowColor: selected ? ToyColors.brand : ToyColors.divider,
+                  textColor: selected ? Colors.white : ToyColors.ink,
+                  onTap: () {
+                    controller.text = selected ? '' : cat;
+                    onChanged();
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

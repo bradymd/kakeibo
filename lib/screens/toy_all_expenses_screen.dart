@@ -7,9 +7,11 @@ import 'package:kakeibo/providers/kakeibo_provider.dart';
 import 'package:kakeibo/providers/month_calculations_provider.dart';
 import 'package:kakeibo/providers/settings_provider.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
+import 'package:kakeibo/services/expense_category_stats.dart';
 import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/services/swipe_nav.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';
+import 'package:kakeibo/widgets/toy/toy_category_summary_card.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 
 /// The gachapon-redesign Spend screen (README §3a). New screen, reached
@@ -20,11 +22,17 @@ import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 /// `recentExpensesProvider` (which caps at 5) since this screen shows
 /// every expense in the month.
 class ToyAllExpensesScreen extends ConsumerStatefulWidget {
-  const ToyAllExpensesScreen({super.key, this.initialPillar});
+  const ToyAllExpensesScreen({super.key, this.initialPillar, this.initialCategory});
 
   /// Pillar to pre-filter to, e.g. when arriving from a tapped capsule
   /// on the dashboard. Null shows all pillars (the default).
   final Pillar? initialPillar;
+
+  /// Category to pre-filter to, e.g. when arriving from the category
+  /// breakdown screen. Null/empty shows all categories (the default).
+  /// Shown back to the user as a dismissible applied-filter pill rather
+  /// than a second filter carousel (per Codex's recommendation).
+  final String? initialCategory;
 
   @override
   ConsumerState<ToyAllExpensesScreen> createState() => _ToyAllExpensesScreenState();
@@ -32,11 +40,13 @@ class ToyAllExpensesScreen extends ConsumerStatefulWidget {
 
 class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
   Pillar? _filterPillar;
+  String? _filterCategory;
 
   @override
   void initState() {
     super.initState();
     _filterPillar = widget.initialPillar;
+    _filterCategory = widget.initialCategory?.isNotEmpty == true ? widget.initialCategory : null;
   }
 
   @override
@@ -72,7 +82,18 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
           expenses = expenses.where((e) => e.pillar == _filterPillar).toList();
         }
 
+        // Snapshot for the summary card/threshold check -- taken before the
+        // category filter below so the card's "N of M categorised" always
+        // reflects the pillar-filtered set, not a further-narrowed one.
+        final categoryEligible = expenses;
+
+        if (_filterCategory != null) {
+          expenses = expenses.where((e) => e.category == _filterCategory).toList();
+        }
+
         final filteredTotal = expenses.fold(0.0, (sum, e) => sum + e.amount);
+        final showCategorySummary = _filterCategory == null &&
+            ExpenseCategoryStats.meetsSummaryThreshold(categoryEligible);
 
         return ToyScaffold(
           title: '支出 Spent',
@@ -118,6 +139,38 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
                       ),
                   ],
                 ),
+                if (_filterCategory != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      ToyMetrics.screenPaddingH,
+                      8,
+                      ToyMetrics.screenPaddingH,
+                      0,
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: _AppliedFilterPill(
+                        label: 'Category: $_filterCategory',
+                        onClear: () => setState(() => _filterCategory = null),
+                      ),
+                    ),
+                  ),
+                if (showCategorySummary)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      ToyMetrics.screenPaddingH,
+                      10,
+                      ToyMetrics.screenPaddingH,
+                      0,
+                    ),
+                    child: ToyCategorySummaryCard(
+                      stats: ExpenseCategoryStats.aggregate(categoryEligible),
+                      categorisedCount: ExpenseCategoryStats.categorisedCount(categoryEligible),
+                      totalCount: categoryEligible.length,
+                      formatAmount: fmt,
+                      onTap: () => context.push('/toy-category-breakdown'),
+                    ),
+                  ),
                 Expanded(
                   child: expenses.isEmpty
                       ? _EmptyState(
@@ -204,6 +257,46 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
       ),
     );
     return confirmed ?? false;
+  }
+}
+
+/// A single compact "applied filter" pill shown below the pillar row when
+/// arriving with a category pre-filter (e.g. from the breakdown screen's
+/// tap-to-filter). Per Codex: never a second full carousel, just one pill
+/// with a clear (x) affordance.
+class _AppliedFilterPill extends StatelessWidget {
+  const _AppliedFilterPill({required this.label, required this.onClear});
+
+  final String label;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onClear,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
+        decoration: BoxDecoration(
+          color: ToyColors.brand.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: ToyTextStyles.label(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: ToyColors.brand,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.close_rounded, size: 15, color: ToyColors.brand),
+          ],
+        ),
+      ),
+    );
   }
 }
 

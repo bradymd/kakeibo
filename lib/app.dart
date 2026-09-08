@@ -21,6 +21,7 @@ import 'package:kakeibo/screens/setup_screen.dart';
 import 'package:kakeibo/screens/toy_about_screen.dart';
 import 'package:kakeibo/screens/toy_add_expense_screen.dart';
 import 'package:kakeibo/screens/toy_all_expenses_screen.dart';
+import 'package:kakeibo/screens/toy_category_breakdown_screen.dart';
 import 'package:kakeibo/screens/toy_fixed_expenses_screen.dart';
 import 'package:kakeibo/screens/toy_home_screen.dart';
 import 'package:kakeibo/screens/toy_import_screen.dart';
@@ -64,8 +65,15 @@ final _router = GoRouter(
         final pillar = pillarName == null
             ? null
             : Pillar.values.where((p) => p.name == pillarName).firstOrNull;
-        return ToyAllExpensesScreen(initialPillar: pillar);
+        return ToyAllExpensesScreen(
+          initialPillar: pillar,
+          initialCategory: state.uri.queryParameters['category'],
+        );
       },
+    ),
+    GoRoute(
+      path: '/toy-category-breakdown',
+      builder: (context, state) => const ToyCategoryBreakdownScreen(),
     ),
     GoRoute(
       path: '/toy-fixed-expenses',

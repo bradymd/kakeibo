@@ -25,6 +25,16 @@ final currentMonthProvider = Provider<AsyncValue<KakeiboMonth>>((ref) {
   });
 });
 
+/// The Spend category suggestion catalogue, refreshed whenever the notifier
+/// invalidates itself (every category-suggestion or expense mutation goes
+/// through it) so a fresh suggestion appears without a manual refresh.
+final expenseCategorySuggestionsProvider =
+    FutureProvider<List<String>>((ref) async {
+  ref.watch(kakeiboMonthsProvider);
+  final db = ref.watch(databaseProvider);
+  return db.getExpenseCategorySuggestions();
+});
+
 class KakeiboMonthsNotifier extends AsyncNotifier<List<KakeiboMonth>> {
   @override
   Future<List<KakeiboMonth>> build() async {
@@ -59,6 +69,7 @@ class KakeiboMonthsNotifier extends AsyncNotifier<List<KakeiboMonth>> {
     required double amount,
     required String pillarName,
     String notes = '',
+    String category = '',
   }) async {
     final db = ref.read(databaseProvider);
     final pillar = _parsePillar(pillarName);
@@ -70,6 +81,7 @@ class KakeiboMonthsNotifier extends AsyncNotifier<List<KakeiboMonth>> {
       pillar: pillar,
       notes: notes,
       createdAt: DateTime.now().millisecondsSinceEpoch,
+      category: category,
     );
     // Ensure month exists
     final existing = await db.getMonth(monthId);
@@ -180,6 +192,47 @@ class KakeiboMonthsNotifier extends AsyncNotifier<List<KakeiboMonth>> {
   Future<List<String>> getAllFixedExpenseCategories() async {
     final db = ref.read(databaseProvider);
     return db.getAllFixedExpenseCategories();
+  }
+
+  // --- Spend category suggestions ---
+  // Backed by a standalone catalogue (ExpenseCategorySuggestions), not a
+  // SELECT DISTINCT over Expenses rows -- see database_provider.dart.
+
+  Future<List<String>> getExpenseCategorySuggestions() async {
+    final db = ref.read(databaseProvider);
+    return db.getExpenseCategorySuggestions();
+  }
+
+  Future<void> addExpenseCategorySuggestion(String name) async {
+    final db = ref.read(databaseProvider);
+    await db.addExpenseCategorySuggestion(name);
+    ref.invalidateSelf();
+  }
+
+  Future<void> hideExpenseCategorySuggestion(
+    String name, {
+    bool alsoClearHistoricalExpenses = false,
+  }) async {
+    final db = ref.read(databaseProvider);
+    await db.hideExpenseCategorySuggestion(
+      name,
+      alsoClearHistoricalExpenses: alsoClearHistoricalExpenses,
+    );
+    ref.invalidateSelf();
+  }
+
+  Future<void> renameExpenseCategorySuggestion(
+    String oldName,
+    String newName, {
+    bool alsoUpdateHistoricalExpenses = false,
+  }) async {
+    final db = ref.read(databaseProvider);
+    await db.renameExpenseCategorySuggestion(
+      oldName,
+      newName,
+      alsoUpdateHistoricalExpenses: alsoUpdateHistoricalExpenses,
+    );
+    ref.invalidateSelf();
   }
 
   Future<void> saveReflection({

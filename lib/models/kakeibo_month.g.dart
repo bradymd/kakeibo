@@ -69,6 +69,7 @@ _$KakeiboExpenseImpl _$$KakeiboExpenseImplFromJson(Map<String, dynamic> json) =>
       pillar: $enumDecode(_$PillarEnumMap, json['pillar']),
       notes: json['notes'] as String? ?? '',
       createdAt: (json['createdAt'] as num?)?.toInt() ?? 0,
+      category: json['category'] as String? ?? '',
     );
 
 Map<String, dynamic> _$$KakeiboExpenseImplToJson(
@@ -81,6 +82,7 @@ Map<String, dynamic> _$$KakeiboExpenseImplToJson(
   'pillar': _$PillarEnumMap[instance.pillar]!,
   'notes': instance.notes,
   'createdAt': instance.createdAt,
+  'category': instance.category,
 };
 
 const _$PillarEnumMap = {

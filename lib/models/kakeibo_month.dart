@@ -44,6 +44,10 @@ class KakeiboExpense with _$KakeiboExpense {
     required Pillar pillar,
     @Default('') String notes,
     @Default(0) int createdAt,
+    // Optional, free-text, never enforced. Empty string means
+    // "not categorised" (mirrors the nullable-in-db, empty-in-model
+    // convention already used for `notes`).
+    @Default('') String category,
   }) = _KakeiboExpense;
 
   factory KakeiboExpense.fromJson(Map<String, dynamic> json) =>

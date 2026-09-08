@@ -34,9 +34,28 @@ class Expenses extends Table {
   TextColumn get pillar => text()();
   TextColumn get notes => text().withDefault(const Constant(''))();
   IntColumn get createdAt => integer().withDefault(const Constant(0))();
+  // Optional, free-text. Null/empty means "not categorised" -- never
+  // enforced. See ExpenseCategorySuggestions for the separate suggestion
+  // catalogue this is deliberately decoupled from.
+  TextColumn get category => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+/// A standalone catalogue of category names the user has created for Spend
+/// entries, independent of any `Expenses` row. This is NOT a `SELECT
+/// DISTINCT` over `Expenses.category` (that's the Fixed Costs pattern) --
+/// deliberately separate so a suggestion can be hidden/deleted without
+/// touching, or being kept alive by, historical expense data.
+@DataClassName('ExpenseCategorySuggestionRow')
+class ExpenseCategorySuggestions extends Table {
+  TextColumn get name => text()();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  BoolColumn get hidden => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {name};
 }
 
 @DataClassName('FixedExpenseRow')
@@ -73,12 +92,19 @@ class AppSettings extends Table {
   Set<Column> get primaryKey => {key};
 }
 
-@DriftDatabase(tables: [KakeiboMonths, Expenses, FixedExpenses, IncomeSources, AppSettings])
+@DriftDatabase(tables: [
+  KakeiboMonths,
+  Expenses,
+  FixedExpenses,
+  IncomeSources,
+  AppSettings,
+  ExpenseCategorySuggestions,
+])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -92,6 +118,10 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 4) {
             await m.addColumn(expenses, expenses.createdAt);
+          }
+          if (from < 5) {
+            await m.addColumn(expenses, expenses.category);
+            await m.createTable(expenseCategorySuggestions);
           }
         },
       );
@@ -171,6 +201,7 @@ class AppDatabase extends _$AppDatabase {
         pillar: exp.pillar.name,
         notes: Value(exp.notes),
         createdAt: Value(exp.createdAt),
+        category: Value(exp.category.isEmpty ? null : exp.category),
       ),
     );
   }
@@ -183,6 +214,7 @@ class AppDatabase extends _$AppDatabase {
         amount: Value(exp.amount),
         pillar: Value(exp.pillar.name),
         notes: Value(exp.notes),
+        category: Value(exp.category.isEmpty ? null : exp.category),
       ),
     );
   }
@@ -382,6 +414,89 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
+  // --- Spend category suggestions ---
+  //
+  // A standalone catalogue, deliberately not derived from `Expenses` rows --
+  // see the table doc comment. "Deleting" a suggestion hides it rather than
+  // removing the row, so a re-typed name doesn't silently resurrect it with
+  // a fresh sort position; historical expenses keep whatever category
+  // string they already had regardless of hidden state.
+
+  Future<List<String>> getExpenseCategorySuggestions() async {
+    final query = select(expenseCategorySuggestions)
+      ..where((t) => t.hidden.equals(false))
+      ..orderBy([
+        (t) => OrderingTerm.asc(t.sortOrder),
+        (t) => OrderingTerm.asc(t.name),
+      ]);
+    final rows = await query.get();
+    return rows.map((r) => r.name).toList();
+  }
+
+  Future<void> addExpenseCategorySuggestion(String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    final existing = await (select(expenseCategorySuggestions)
+          ..where((t) => t.name.equals(trimmed)))
+        .getSingleOrNull();
+    if (existing != null) {
+      if (existing.hidden) {
+        await (update(expenseCategorySuggestions)
+              ..where((t) => t.name.equals(trimmed)))
+            .write(const ExpenseCategorySuggestionsCompanion(
+                hidden: Value(false)));
+      }
+      return;
+    }
+    final count = await (selectOnly(expenseCategorySuggestions)
+          ..addColumns([expenseCategorySuggestions.name.count()]))
+        .map((row) => row.read(expenseCategorySuggestions.name.count()) ?? 0)
+        .getSingle();
+    await into(expenseCategorySuggestions).insert(
+      ExpenseCategorySuggestionsCompanion.insert(
+        name: trimmed,
+        sortOrder: Value(count),
+      ),
+    );
+  }
+
+  /// Hides a suggestion so it stops being offered. Historical expenses that
+  /// already used this category name are left completely untouched -- pass
+  /// [alsoClearHistoricalExpenses] to additionally blank the category on
+  /// every expense currently using it, if the user opts into that.
+  Future<void> hideExpenseCategorySuggestion(
+    String name, {
+    bool alsoClearHistoricalExpenses = false,
+  }) async {
+    await (update(expenseCategorySuggestions)
+          ..where((t) => t.name.equals(name)))
+        .write(const ExpenseCategorySuggestionsCompanion(hidden: Value(true)));
+    if (alsoClearHistoricalExpenses) {
+      await (update(expenses)..where((t) => t.category.equals(name)))
+          .write(const ExpensesCompanion(category: Value(null)));
+    }
+  }
+
+  /// Renames a suggestion. [alsoUpdateHistoricalExpenses] additionally bulk
+  /// updates every expense currently using [oldName] to [newName] -- an
+  /// explicit choice the caller offers the user, not an automatic side
+  /// effect, since a rename here is otherwise suggestion-only.
+  Future<void> renameExpenseCategorySuggestion(
+    String oldName,
+    String newName, {
+    bool alsoUpdateHistoricalExpenses = false,
+  }) async {
+    final trimmed = newName.trim();
+    if (trimmed.isEmpty || trimmed == oldName) return;
+    await (update(expenseCategorySuggestions)
+          ..where((t) => t.name.equals(oldName)))
+        .write(ExpenseCategorySuggestionsCompanion(name: Value(trimmed)));
+    if (alsoUpdateHistoricalExpenses) {
+      await (update(expenses)..where((t) => t.category.equals(oldName)))
+          .write(ExpensesCompanion(category: Value(trimmed)));
+    }
+  }
+
   // --- Helpers ---
 
   models.KakeiboMonth _monthFromRow(
@@ -422,6 +537,7 @@ class AppDatabase extends _$AppDatabase {
       ),
       notes: row.notes,
       createdAt: row.createdAt,
+      category: row.category ?? '',
     );
   }
 
