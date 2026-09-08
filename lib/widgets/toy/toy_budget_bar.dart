@@ -93,7 +93,12 @@ class ToyBudgetBar extends StatelessWidget {
           spacing: 12,
           runSpacing: 4,
           children: [
-            _LegendItem(color: ToyPillarColors.needsFill, label: 'Savings ${formatAmount(actualSavings)}'),
+            _LegendItem(
+              color: ToyPillarColors.needsFill,
+              label: actualSavings < savingsGoal
+                  ? 'Savings goal ${formatAmount(actualSavings)} of ${formatAmount(savingsGoal)}'
+                  : 'Savings goal ${formatAmount(actualSavings)}',
+            ),
             _LegendItem(color: ToyColors.brand, label: 'Spent ${formatAmount(totalSpent)}'),
             _LegendItem(
               color: ToyColors.gold,

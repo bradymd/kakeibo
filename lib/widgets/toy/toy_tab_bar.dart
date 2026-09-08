@@ -25,7 +25,12 @@ enum ToyTabDestination {
 /// pill: `#C22B60` fill, white text, shadow `0 4px 0 #B32A5C`. Inactive:
 /// `#FFEAF1` fill, `#8A5B6B` text, shadow `0 4px 0 #F3D3DE`.
 class ToyTabBar extends StatelessWidget {
-  const ToyTabBar({super.key, required this.current, this.disabled = const {}});
+  const ToyTabBar({
+    super.key,
+    required this.current,
+    this.disabled = const {},
+    this.pathOverrides = const {},
+  });
 
   /// The currently active destination.
   final ToyTabDestination current;
@@ -33,6 +38,13 @@ class ToyTabBar extends StatelessWidget {
   /// Destinations to render disabled (README §5b: before a month is set
   /// up, Spend and Reflect are disabled).
   final Set<ToyTabDestination> disabled;
+
+  /// Per-destination path overrides, used only while the redesign is
+  /// mid-rollout: screens not yet converted don't have a toy version to
+  /// link to, so a converted screen can point its tab bar at the other
+  /// converted screens' preview routes instead of the real ones. Remove
+  /// once every destination has a converted screen at its real route.
+  final Map<ToyTabDestination, String> pathOverrides;
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +65,8 @@ class ToyTabBar extends StatelessWidget {
                 destination: ToyTabDestination.values[i],
                 active: ToyTabDestination.values[i] == current,
                 enabled: !disabled.contains(ToyTabDestination.values[i]),
+                path: pathOverrides[ToyTabDestination.values[i]] ??
+                    ToyTabDestination.values[i].path,
               ),
             ),
           ],
@@ -63,11 +77,17 @@ class ToyTabBar extends StatelessWidget {
 }
 
 class _TabPill extends StatelessWidget {
-  const _TabPill({required this.destination, required this.active, required this.enabled});
+  const _TabPill({
+    required this.destination,
+    required this.active,
+    required this.enabled,
+    required this.path,
+  });
 
   final ToyTabDestination destination;
   final bool active;
   final bool enabled;
+  final String path;
 
   @override
   Widget build(BuildContext context) {
@@ -86,15 +106,7 @@ class _TabPill extends StatelessWidget {
     return ToyPressable(
       restOffset: 4,
       pressedOffset: 1,
-      onTap: enabled && !active
-          ? () {
-              if (destination == ToyTabDestination.month) {
-                context.go(destination.path);
-              } else {
-                context.go(destination.path);
-              }
-            }
-          : null,
+      onTap: enabled && !active ? () => context.go(path) : null,
       builder: (context, offset) => Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(

@@ -25,6 +25,7 @@ class ToyScaffold extends StatelessWidget {
     required this.body,
     this.tab,
     this.disabledTabs = const {},
+    this.tabPathOverrides = const {},
     this.showBackButton = false,
     this.onBack,
     this.trailing,
@@ -46,6 +47,11 @@ class ToyScaffold extends StatelessWidget {
   /// screens use a back arrow instead — see README "Global chrome").
   final ToyTabDestination? tab;
   final Set<ToyTabDestination> disabledTabs;
+
+  /// See `ToyTabBar.pathOverrides` — mid-rollout escape hatch, remove
+  /// once every tab destination has a converted screen at its real
+  /// route.
+  final Map<ToyTabDestination, String> tabPathOverrides;
 
   final bool showBackButton;
   final VoidCallback? onBack;
@@ -73,7 +79,12 @@ class ToyScaffold extends StatelessWidget {
             fillColor: headerColor,
           ),
           Expanded(child: body),
-          if (tab != null) ToyTabBar(current: tab!, disabled: disabledTabs),
+          if (tab != null)
+            ToyTabBar(
+              current: tab!,
+              disabled: disabledTabs,
+              pathOverrides: tabPathOverrides,
+            ),
         ],
       ),
       floatingActionButton: floatingActionButton,

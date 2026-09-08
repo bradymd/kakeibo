@@ -44,9 +44,17 @@ class ToyHomeScreen extends ConsumerWidget {
           ? '${displayMonth.toUpperCase()} ・ $daysUntilPayday ${daysUntilPayday == 1 ? 'day' : 'days'} to payday'
           : displayMonth.toUpperCase(),
       tab: ToyTabDestination.month,
+      // Fixed and Reflect have no converted screen yet — disabled
+      // rather than falling through to the old-style screens. Remove
+      // once they're built (see ToyTabBar.pathOverrides doc).
       disabledTabs: isSetup
-          ? const {}
-          : const {ToyTabDestination.spend, ToyTabDestination.reflect},
+          ? const {ToyTabDestination.fixed, ToyTabDestination.reflect}
+          : const {
+              ToyTabDestination.spend,
+              ToyTabDestination.fixed,
+              ToyTabDestination.reflect,
+            },
+      tabPathOverrides: const {ToyTabDestination.spend: '/toy-expenses'},
       trailing: const ToyMenuButton(),
       floatingActionButton:
           isSetup ? ToyFab(onTap: () => context.push('/add-expense')) : null,
