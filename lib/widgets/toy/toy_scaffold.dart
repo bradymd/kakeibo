@@ -31,6 +31,7 @@ class ToyScaffold extends StatelessWidget {
     this.onBack,
     this.trailing,
     this.headerColor = ToyColors.brand,
+    this.subtitleColor,
     this.backgroundColor = ToyColors.bg,
     this.floatingActionButton,
   });
@@ -65,6 +66,11 @@ class ToyScaffold extends StatelessWidget {
   final Widget? trailing;
 
   final Color headerColor;
+
+  /// Subtitle text colour override — README §5a switches this to
+  /// `#FFC9D8` on the over-budget header. Defaults to the usual gold.
+  final Color? subtitleColor;
+
   final Color backgroundColor;
   final Widget? floatingActionButton;
 
@@ -77,6 +83,7 @@ class ToyScaffold extends StatelessWidget {
           _Header(
             title: title,
             subtitle: subtitle,
+            subtitleColor: subtitleColor,
             headlineFigure: headlineFigure,
             headerBottom: headerBottom,
             showBackButton: showBackButton,
@@ -105,6 +112,7 @@ class _Header extends StatelessWidget {
   const _Header({
     required this.title,
     required this.subtitle,
+    this.subtitleColor,
     required this.headlineFigure,
     required this.headerBottom,
     required this.showBackButton,
@@ -115,6 +123,7 @@ class _Header extends StatelessWidget {
 
   final String title;
   final String? subtitle;
+  final Color? subtitleColor;
   final String? headlineFigure;
   final Widget? headerBottom;
   final bool showBackButton;
@@ -171,7 +180,12 @@ class _Header extends StatelessWidget {
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
-                    Text(subtitle!, style: ToyTextStyles.headerSubtitle()),
+                    Text(
+                      subtitle!,
+                      style: subtitleColor != null
+                          ? ToyTextStyles.headerSubtitle(color: subtitleColor!)
+                          : ToyTextStyles.headerSubtitle(),
+                    ),
                   ],
                   if (headlineFigure != null) ...[
                     const SizedBox(height: 4),

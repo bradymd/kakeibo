@@ -40,11 +40,33 @@ class ToyHomeScreen extends ConsumerWidget {
     final daysUntilPayday = ref.watch(daysUntilPaydayProvider);
     final payday = ref.watch(currentPaydayProvider).valueOrNull;
 
+    // Over-budget header switch (README §5a). availableBudgetProvider/
+    // totalSpentProvider default to 0 before setup, so this is safely
+    // false (not over budget) on the not-set-up and loading paths.
+    final headerAvailableBudget = ref.watch(availableBudgetProvider);
+    final headerTotalSpent = ref.watch(totalSpentProvider);
+    final headerIsOverBudget = headerTotalSpent > headerAvailableBudget;
+    final headerFinancialProgress = ref.watch(financialProgressProvider);
+
+    String headerSubtitle;
+    if (headerIsOverBudget) {
+      final overspend = headerTotalSpent - headerAvailableBudget;
+      final daysLeft = headerFinancialProgress != null
+          ? headerFinancialProgress.total - headerFinancialProgress.day
+          : (daysUntilPayday ?? 0);
+      headerSubtitle =
+          'You overspent by ${fmt(overspend)} with $daysLeft ${daysLeft == 1 ? 'day' : 'days'} left';
+    } else if (daysUntilPayday != null) {
+      headerSubtitle = '$daysUntilPayday ${daysUntilPayday == 1 ? 'day' : 'days'} to payday';
+    } else {
+      headerSubtitle = '';
+    }
+
     return ToyScaffold(
       title: '家計簿 Kakeibo',
-      subtitle: daysUntilPayday != null
-          ? '$daysUntilPayday ${daysUntilPayday == 1 ? 'day' : 'days'} to payday'
-          : null,
+      subtitle: headerSubtitle.isEmpty ? null : headerSubtitle,
+      subtitleColor: headerIsOverBudget ? ToyColors.dangerHeaderSubtitle : null,
+      headerColor: headerIsOverBudget ? ToyColors.dangerHeader : ToyColors.brand,
       headerBottom: Center(
         child: ToyMonthNavigator(
           displayText: displayMonth,
@@ -86,8 +108,10 @@ class ToyHomeScreen extends ConsumerWidget {
               return _NotSetUpState(displayMonth: displayMonth);
             }
 
-            final availableBudget = ref.watch(availableBudgetProvider);
-            final totalSpent = ref.watch(totalSpentProvider);
+            // Reuse the values already computed above the header switch
+            // rather than re-watching the same providers.
+            final availableBudget = headerAvailableBudget;
+            final totalSpent = headerTotalSpent;
             final disposableIncome = ref.watch(disposableIncomeProvider);
             final fixedCostsTotal = ref.watch(fixedExpensesTotalProvider);
             final pillarTotals = ref.watch(pillarTotalsProvider);
@@ -99,7 +123,7 @@ class ToyHomeScreen extends ConsumerWidget {
             // the calendar month (matches the original BudgetBar and
             // what Payday Settings' own copy promises). Falls back to
             // calendar days when no payday is set.
-            final financialProgress = ref.watch(financialProgressProvider);
+            final financialProgress = headerFinancialProgress;
             final now = DateTime.now();
             final calendarDaysInMonth = DateTime(year, month + 1, 0).day;
             final calendarDayOfMonth = (year == now.year && month == now.month)
@@ -109,8 +133,7 @@ class ToyHomeScreen extends ConsumerWidget {
             final daysInMonth = financialProgress?.total ?? calendarDaysInMonth;
             final goesLeft = daysInMonth - dayOfMonth;
 
-            final remaining = availableBudget - totalSpent;
-            final isOverBudget = remaining < 0;
+            final isOverBudget = headerIsOverBudget;
 
             // "Running hot": Wants is meaningfully ahead of its even
             // per-pillar share of the budget (README §2b wolf strip).
@@ -148,7 +171,14 @@ class ToyHomeScreen extends ConsumerWidget {
                     goesLeft: goesLeft,
                     paydayDayOfMonth: payday?.day,
                   ),
-                  if (showWolfStrip) ...[
+                  if (isOverBudget) ...[
+                    const SizedBox(height: ToyMetrics.cardGap),
+                    _OverBudgetVerdictCard(
+                      savingsGoalText: fmt(currentMonth.savingsGoal),
+                      pillarTotals: pillarTotals,
+                      formatAmount: fmt,
+                    ),
+                  ] else if (showWolfStrip) ...[
                     const SizedBox(height: ToyMetrics.cardGap),
                     _WolfStrip(overAmount: fmt(wantsOverPace)),
                   ],
@@ -347,6 +377,140 @@ class _CapsuleDomeCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Full over-budget verdict card (README §5a): the wolf strip becomes a
+/// dedicated card once spending has actually exceeded the available
+/// budget (not just running hot ahead of pace). Reassures that the
+/// savings goal is still intact, then shows where the money went.
+class _OverBudgetVerdictCard extends StatelessWidget {
+  const _OverBudgetVerdictCard({
+    required this.savingsGoalText,
+    required this.pillarTotals,
+    required this.formatAmount,
+  });
+
+  final String savingsGoalText;
+  final Map<Pillar, double> pillarTotals;
+  final String Function(double) formatAmount;
+
+  @override
+  Widget build(BuildContext context) {
+    final sorted = Pillar.values.toList()
+      ..sort((a, b) => (pillarTotals[b] ?? 0).compareTo(pillarTotals[a] ?? 0));
+    final maxSpent = pillarTotals.values.fold(0.0, (a, b) => a > b ? a : b);
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(ToyMetrics.cardPadding),
+          decoration: BoxDecoration(
+            color: ToyColors.wolfCard,
+            borderRadius: BorderRadius.circular(26),
+          ),
+          child: Column(
+            children: [
+              Image.asset('assets/images/wolf.png', width: 104, height: 104),
+              const SizedBox(height: 8),
+              Text('浪費家', style: ToyTextStyles.verdict(color: ToyColors.wolfPink)),
+              Text(
+                'Spender',
+                style: ToyTextStyles.label(fontSize: 11, color: const Color(0xFFC9A9B5)),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'The savings goal is still safe if you stop here. Anything more comes out of the $savingsGoalText.',
+                style: ToyTextStyles.body(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFFEFDCE2),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: ToyMetrics.cardGap),
+        ToyCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Where it went', style: ToyTextStyles.cardTitle(fontSize: 14.5)),
+              const SizedBox(height: 12),
+              for (var i = 0; i < sorted.length; i++) ...[
+                _WhereItWentRow(
+                  pillar: sorted[i],
+                  amount: pillarTotals[sorted[i]] ?? 0,
+                  ratio: maxSpent > 0 ? ((pillarTotals[sorted[i]] ?? 0) / maxSpent).clamp(0.0, 1.0) : 0.0,
+                  worst: i == 0,
+                  formatAmount: formatAmount,
+                ),
+                if (i != sorted.length - 1) const SizedBox(height: 10),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WhereItWentRow extends StatelessWidget {
+  const _WhereItWentRow({
+    required this.pillar,
+    required this.amount,
+    required this.ratio,
+    required this.worst,
+    required this.formatAmount,
+  });
+
+  final Pillar pillar;
+  final double amount;
+  final double ratio;
+  final bool worst;
+  final String Function(double) formatAmount;
+
+  @override
+  Widget build(BuildContext context) {
+    final barColor = worst ? ToyColors.danger : pillar.toyFill;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${pillar.label} ${pillar.japanese}',
+                style: ToyTextStyles.label(fontSize: 11.5, fontWeight: FontWeight.w700, color: barColor),
+              ),
+            ),
+            Text(
+              formatAmount(amount),
+              style: ToyTextStyles.label(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+                color: worst ? ToyColors.danger : ToyColors.ink,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(5),
+          child: SizedBox(
+            height: 9,
+            child: Stack(
+              children: [
+                const ColoredBox(color: Color(0xFFEFE3E8)),
+                FractionallySizedBox(widthFactor: ratio, child: ColoredBox(color: barColor)),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

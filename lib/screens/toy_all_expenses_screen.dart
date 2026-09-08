@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:kakeibo/models/pillar.dart';
 import 'package:kakeibo/providers/kakeibo_provider.dart';
+import 'package:kakeibo/providers/month_calculations_provider.dart';
 import 'package:kakeibo/providers/settings_provider.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
 import 'package:kakeibo/services/month_helpers.dart';
@@ -44,6 +45,7 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
     final monthAsync = ref.watch(currentMonthProvider);
     final settings = ref.watch(settingsProvider);
     final currency = settings.whenOrNull(data: (s) => s.currency) ?? 'GBP';
+    final availableBudget = ref.watch(availableBudgetProvider);
 
     String fmt(double amount) => CurrencyFormatter.format(amount, currency: currency);
 
@@ -118,7 +120,10 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
                 ),
                 Expanded(
                   child: expenses.isEmpty
-                      ? _EmptyState(filtered: _filterPillar != null)
+                      ? _EmptyState(
+                          filtered: _filterPillar != null,
+                          availableBudgetText: fmt(availableBudget),
+                        )
                       : SingleChildScrollView(
                           padding: const EdgeInsets.fromLTRB(
                             ToyMetrics.screenPaddingH,
@@ -202,10 +207,15 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
   }
 }
 
+/// README §5c — no expenses yet. The budget-total line only applies
+/// when genuinely nothing has been logged this month (unfiltered); a
+/// pillar filter finding zero matches doesn't mean the month is empty,
+/// so it keeps the shorter copy.
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.filtered});
+  const _EmptyState({required this.filtered, required this.availableBudgetText});
 
   final bool filtered;
+  final String availableBudgetText;
 
   @override
   Widget build(BuildContext context) {
@@ -234,6 +244,14 @@ class _EmptyState extends StatelessWidget {
               style: ToyTextStyles.cardTitle(fontSize: 18),
               textAlign: TextAlign.center,
             ),
+            if (!filtered) ...[
+              const SizedBox(height: 8),
+              Text(
+                'You have $availableBudgetText to budget this month.',
+                style: ToyTextStyles.body(),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ],
         ),
       ),

@@ -8,6 +8,7 @@ import 'package:kakeibo/providers/kakeibo_provider.dart';
 import 'package:kakeibo/providers/month_calculations_provider.dart';
 import 'package:kakeibo/providers/settings_provider.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
+import 'package:kakeibo/services/kakeibo_calculator.dart';
 import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
@@ -18,7 +19,8 @@ class ToyReflectionScreen extends ConsumerStatefulWidget {
   const ToyReflectionScreen({super.key});
 
   @override
-  ConsumerState<ToyReflectionScreen> createState() => _ToyReflectionScreenState();
+  ConsumerState<ToyReflectionScreen> createState() =>
+      _ToyReflectionScreenState();
 }
 
 class _ToyReflectionScreenState extends ConsumerState<ToyReflectionScreen> {
@@ -41,10 +43,14 @@ class _ToyReflectionScreenState extends ConsumerState<ToyReflectionScreen> {
     if (_initialized) return;
     _initialized = true;
     final r = month.reflection;
-    if (r.actualSaved > 0) _actualSavedController.text = r.actualSaved.toStringAsFixed(2);
+    if (r.actualSaved > 0) {
+      _actualSavedController.text = r.actualSaved.toStringAsFixed(2);
+    }
     _howSavedController.text = r.howSaved;
     _improvementsController.text = r.improvements;
-    if (r.accountBalance > 0) _balanceController.text = r.accountBalance.toStringAsFixed(2);
+    if (r.accountBalance > 0) {
+      _balanceController.text = r.accountBalance.toStringAsFixed(2);
+    }
   }
 
   @override
@@ -59,7 +65,19 @@ class _ToyReflectionScreenState extends ConsumerState<ToyReflectionScreen> {
     final (:year, :month) = MonthHelpers.parseMonthId(monthId);
     final displayMonth = MonthHelpers.formatMonthDisplay(year, month);
 
-    String fmt(double amount) => CurrencyFormatter.format(amount, currency: currency);
+    String fmt(double amount) =>
+        CurrencyFormatter.format(amount, currency: currency);
+
+    // README §5d — background switches once the savings goal is met.
+    // monthAsync may still be loading on first build; valueOrNull just
+    // means the background briefly stays default until data arrives,
+    // which is fine (loading state renders a plain spinner anyway).
+    final loadedMonth = monthAsync.valueOrNull;
+    final availableBudget = ref.watch(availableBudgetProvider);
+    final metGoalForBackground =
+        loadedMonth != null &&
+        loadedMonth.savingsGoal > 0 &&
+        totalSpent <= availableBudget;
 
     return ToyScaffold(
       title: '反省 End of Month',
@@ -70,8 +88,11 @@ class _ToyReflectionScreenState extends ConsumerState<ToyReflectionScreen> {
       // holds the four things tracked during the month).
       showBackButton: true,
       trailing: const ToyMenuButton(),
+      backgroundColor: metGoalForBackground ? ToyColors.bgGoal : ToyColors.bg,
       body: monthAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: ToyColors.brand)),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: ToyColors.brand),
+        ),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (currentMonth) {
           _initFromMonth(currentMonth);
@@ -80,11 +101,13 @@ class _ToyReflectionScreenState extends ConsumerState<ToyReflectionScreen> {
           final disposableIncome = ref.watch(disposableIncomeProvider);
           final remaining = ref.watch(remainingProvider);
           final fixedCostsTotal = ref.watch(fixedExpensesTotalProvider);
-          final potentialSavings = (remaining >= 0
-                  ? currentMonth.savingsGoal
-                  : max(0.0, currentMonth.savingsGoal + remaining))
-              .toDouble();
+          final potentialSavings =
+              (remaining >= 0
+                      ? currentMonth.savingsGoal
+                      : max(0.0, currentMonth.savingsGoal + remaining))
+                  .toDouble();
           final metGoal = remaining >= 0 && currentMonth.savingsGoal > 0;
+          final spareAmount = metGoal ? remaining : 0.0;
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(
@@ -107,9 +130,19 @@ class _ToyReflectionScreenState extends ConsumerState<ToyReflectionScreen> {
                 potentialSavings: potentialSavings,
                 potentialSavingsText: fmt(potentialSavings),
                 totalSpentOverText: fmt(totalSpent - disposableIncome),
+                savedText: metGoal ? fmt(currentMonth.savingsGoal) : null,
+                spareText: metGoal ? fmt(spareAmount) : null,
               ),
+              if (metGoal) ...[
+                const SizedBox(height: ToyMetrics.cardGap),
+                _ThreeMonthsCard(currentMonthId: monthId, formatAmount: fmt),
+              ],
               const SizedBox(height: ToyMetrics.cardGap),
-              _BreakdownCard(pillarTotals: pillarTotals, totalSpentText: fmt(totalSpent), formatAmount: fmt),
+              _BreakdownCard(
+                pillarTotals: pillarTotals,
+                totalSpentText: fmt(totalSpent),
+                formatAmount: fmt,
+              ),
               const SizedBox(height: ToyMetrics.cardGap),
               _QuestionCard(
                 question: 'Q3: How much did you actually save?',
@@ -145,13 +178,17 @@ class _ToyReflectionScreenState extends ConsumerState<ToyReflectionScreen> {
               ),
               const SizedBox(height: ToyMetrics.cardGap),
               ToyPrimaryButton(
-                label: isCompleted ? 'Update Reflection' : 'Complete Reflection',
+                label: isCompleted
+                    ? 'Update Reflection'
+                    : 'Complete Reflection',
                 onTap: () async {
                   final reflection = Reflection(
-                    actualSaved: double.tryParse(_actualSavedController.text) ?? 0,
+                    actualSaved:
+                        double.tryParse(_actualSavedController.text) ?? 0,
                     howSaved: _howSavedController.text.trim(),
                     improvements: _improvementsController.text.trim(),
-                    accountBalance: double.tryParse(_balanceController.text) ?? 0,
+                    accountBalance:
+                        double.tryParse(_balanceController.text) ?? 0,
                     completed: true,
                   );
                   await ref
@@ -188,6 +225,8 @@ class _VerdictCard extends StatelessWidget {
     required this.potentialSavings,
     required this.potentialSavingsText,
     required this.totalSpentOverText,
+    this.savedText,
+    this.spareText,
   });
 
   final String income;
@@ -203,46 +242,126 @@ class _VerdictCard extends StatelessWidget {
   final String potentialSavingsText;
   final String totalSpentOverText;
 
+  /// Non-null only when [metGoal] — README §5d's SAVED/SPARE tiles.
+  final String? savedText;
+  final String? spareText;
+
   @override
   Widget build(BuildContext context) {
-    return ToyCard(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Your Month in Review', style: ToyTextStyles.cardTitle(fontSize: 17)),
-                const SizedBox(height: 12),
-                _narrative(),
-              ],
-            ),
+    return Column(
+      children: [
+        ToyCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              if (metGoal)
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(ToyMetrics.cardRadius),
+                  ),
+                  child: CustomPaint(
+                    size: const Size(double.infinity, 6),
+                    painter: const _ConfettiStripePainter(),
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(ToyMetrics.cardPadding),
+                child: _cardBody(),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 88,
-            child: Column(
-              children: [
-                Text(
-                  metGoal ? '節約家' : '浪費家',
-                  style: ToyTextStyles.verdict(color: metGoal ? ToyColors.success : ToyColors.wolfPink),
+        ),
+        if (metGoal && savedText != null && spareText != null) ...[
+          const SizedBox(height: ToyMetrics.cardGap),
+          Row(
+            children: [
+              Expanded(
+                child: _GoalTile(
+                  label: 'SAVED',
+                  amountText: savedText!,
+                  background: ToyColors.mint,
                 ),
-                Text(
-                  metGoal ? 'Saver' : 'Spender',
-                  style: ToyTextStyles.label(fontSize: 10.5),
+              ),
+              const SizedBox(width: ToyMetrics.gridTileGap),
+              Expanded(
+                child: _GoalTile(
+                  label: 'SPARE',
+                  amountText: spareText!,
+                  background: ToyColors.goldBg2,
                 ),
-                const SizedBox(height: 8),
-                Image.asset(
-                  metGoal ? 'assets/images/pig-overlay.png' : 'assets/images/wolf-overlay.png',
-                  fit: BoxFit.contain,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
-      ),
+      ],
+    );
+  }
+
+  Widget _cardBody() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Your Month in Review',
+                style: ToyTextStyles.cardTitle(fontSize: 17),
+              ),
+              const SizedBox(height: 12),
+              _narrative(),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 88,
+          child: Column(
+            children: [
+              if (metGoal) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: ToyColors.gold,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'GOAL ・ 達成',
+                    style: ToyTextStyles.microLabel(
+                      fontSize: 10.5,
+                      color: ToyColors.goldInk,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+              ],
+              Text(
+                metGoal ? '節約家' : '浪費家',
+                style: ToyTextStyles.verdict(
+                  color: metGoal ? ToyColors.success : ToyColors.wolfPink,
+                ),
+              ),
+              Text(
+                metGoal ? 'Saver' : 'Spender',
+                style: ToyTextStyles.label(fontSize: 10.5),
+              ),
+              const SizedBox(height: 8),
+              Image.asset(
+                metGoal
+                    ? 'assets/images/pig-overlay.png'
+                    : 'assets/images/wolf-overlay.png',
+                fit: BoxFit.contain,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -300,10 +419,13 @@ class _VerdictCard extends StatelessWidget {
         const TextSpan(text: '.'),
       ]);
     }
-    return RichText(text: TextSpan(style: style, children: spans));
+    return RichText(
+      text: TextSpan(style: style, children: spans),
+    );
   }
 
-  TextStyle _bold(Color color) => ToyTextStyles.body(fontWeight: FontWeight.w800, color: color);
+  TextStyle _bold(Color color) =>
+      ToyTextStyles.body(fontWeight: FontWeight.w800, color: color);
 }
 
 class _BreakdownCard extends StatelessWidget {
@@ -324,14 +446,22 @@ class _BreakdownCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Reflection on your spending this month', style: ToyTextStyles.cardTitle(fontSize: 14.5)),
-          Text('Total: $totalSpentText', style: ToyTextStyles.label(fontSize: 11.5)),
+          Text(
+            'Reflection on your spending this month',
+            style: ToyTextStyles.cardTitle(fontSize: 14.5),
+          ),
+          Text(
+            'Total: $totalSpentText',
+            style: ToyTextStyles.label(fontSize: 11.5),
+          ),
           const SizedBox(height: 12),
           for (final pillar in Pillar.values) ...[
             _PillarBar(
               pillar: pillar,
               amount: pillarTotals[pillar] ?? 0,
-              ratio: maxSpent > 0 ? ((pillarTotals[pillar] ?? 0) / maxSpent).clamp(0.0, 1.0) : 0.0,
+              ratio: maxSpent > 0
+                  ? ((pillarTotals[pillar] ?? 0) / maxSpent).clamp(0.0, 1.0)
+                  : 0.0,
               formatAmount: formatAmount,
             ),
             if (pillar != Pillar.values.last) const SizedBox(height: 10),
@@ -365,12 +495,19 @@ class _PillarBar extends StatelessWidget {
             Expanded(
               child: Text(
                 '${pillar.label} ${pillar.japanese}',
-                style: ToyTextStyles.label(fontSize: 11.5, fontWeight: FontWeight.w700, color: pillar.toyFill),
+                style: ToyTextStyles.label(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: pillar.toyFill,
+                ),
               ),
             ),
             Text(
               formatAmount(amount),
-              style: ToyTextStyles.label(fontSize: 11.5, fontWeight: FontWeight.w700),
+              style: ToyTextStyles.label(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),
@@ -389,6 +526,167 @@ class _PillarBar extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// `repeating-linear-gradient(90deg,#FFD24C 0 10px,#38C39A 10px 20px,
+/// #E8447C 20px 30px)` — the confetti stripe along the top of the
+/// verdict card when the savings goal is met (README §5d).
+class _ConfettiStripePainter extends CustomPainter {
+  const _ConfettiStripePainter();
+
+  static const _colors = [ToyColors.gold, ToyPillarColors.needsFill, ToyColors.brand];
+  static const _bandWidth = 10.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    var x = 0.0;
+    var colorIndex = 0;
+    while (x < size.width) {
+      canvas.drawRect(
+        Rect.fromLTWH(x, 0, _bandWidth, size.height),
+        Paint()..color = _colors[colorIndex % _colors.length],
+      );
+      x += _bandWidth;
+      colorIndex++;
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _ConfettiStripePainter oldDelegate) => false;
+}
+
+/// SAVED / SPARE tile pair (README §5d).
+class _GoalTile extends StatelessWidget {
+  const _GoalTile({required this.label, required this.amountText, required this.background});
+
+  final String label;
+  final String amountText;
+  final Color background;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(ToyMetrics.tileRadius),
+      ),
+      child: Column(
+        children: [
+          Text(label, style: ToyTextStyles.microLabel(fontSize: 10.5)),
+          const SizedBox(height: 2),
+          Text(amountText, style: ToyTextStyles.rowAmount(fontSize: 22)),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Three months of goals" card (README §5d): a bar per month, current
+/// month highlighted, showing whether the savings goal was hit. Only
+/// shown once the current month's goal has been met.
+class _ThreeMonthsCard extends ConsumerWidget {
+  const _ThreeMonthsCard({required this.currentMonthId, required this.formatAmount});
+
+  final String currentMonthId;
+  final String Function(double) formatAmount;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final allMonthsAsync = ref.watch(kakeiboMonthsProvider);
+    return allMonthsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (allMonths) {
+        // Current month plus the two immediately before it, oldest
+        // first, by monthId (yyyy-mm sorts correctly as a string).
+        final ids = <String>{currentMonthId};
+        var cursor = currentMonthId;
+        for (var i = 0; i < 2; i++) {
+          cursor = MonthHelpers.getPrevMonthId(cursor);
+          ids.add(cursor);
+        }
+        final months = allMonths.where((m) => ids.contains(m.id)).toList()
+          ..sort((a, b) => a.id.compareTo(b.id));
+
+        if (months.length < 2) return const SizedBox.shrink();
+
+        return ToyCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Three months of goals', style: ToyTextStyles.cardTitle(fontSize: 14.5)),
+              const SizedBox(height: 12),
+              for (var i = 0; i < months.length; i++) ...[
+                _MonthGoalBar(
+                  month: months[i],
+                  isCurrent: months[i].id == currentMonthId,
+                  formatAmount: formatAmount,
+                ),
+                if (i != months.length - 1) const SizedBox(height: 8),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MonthGoalBar extends StatelessWidget {
+  const _MonthGoalBar({required this.month, required this.isCurrent, required this.formatAmount});
+
+  final KakeiboMonth month;
+  final bool isCurrent;
+  final String Function(double) formatAmount;
+
+  @override
+  Widget build(BuildContext context) {
+    final available = KakeiboCalculator.availableBudget(month);
+    final spent = KakeiboCalculator.totalSpent(month.expenses);
+    final hitGoal = month.savingsGoal > 0 && spent <= available;
+    final parsed = MonthHelpers.parseMonthId(month.id);
+    final label = MonthHelpers.formatMonthDisplay(parsed.year, parsed.month);
+
+    return Row(
+      children: [
+        SizedBox(
+          width: 72,
+          child: Text(
+            label,
+            style: ToyTextStyles.label(
+              fontSize: 11,
+              fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
+              color: isCurrent ? ToyColors.ink : ToyColors.muted2,
+            ),
+          ),
+        ),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(5),
+            child: SizedBox(
+              height: 9,
+              child: ColoredBox(
+                color: isCurrent
+                    ? ToyPillarColors.needsFill
+                    : (hitGoal ? ToyPillarColors.needsFill : ToyColors.divider),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Icon(
+          hitGoal ? Icons.check_circle_rounded : Icons.circle_outlined,
+          size: 16,
+          color: hitGoal ? ToyColors.success : ToyColors.placeholder,
         ),
       ],
     );
@@ -436,12 +734,19 @@ class _TextWell extends StatelessWidget {
         controller: controller,
         maxLines: 3,
         textCapitalization: TextCapitalization.sentences,
-        style: ToyTextStyles.body(fontSize: 12.5, fontWeight: FontWeight.w600, color: ToyColors.ink),
+        style: ToyTextStyles.body(
+          fontSize: 12.5,
+          fontWeight: FontWeight.w600,
+          color: ToyColors.ink,
+        ),
         decoration: InputDecoration(
           border: InputBorder.none,
           isDense: true,
           hintText: placeholder,
-          hintStyle: ToyTextStyles.body(fontSize: 12.5, color: ToyColors.placeholder),
+          hintStyle: ToyTextStyles.body(
+            fontSize: 12.5,
+            color: ToyColors.placeholder,
+          ),
         ),
       ),
     );
@@ -449,7 +754,11 @@ class _TextWell extends StatelessWidget {
 }
 
 class _CurrencyField extends StatelessWidget {
-  const _CurrencyField({required this.controller, required this.symbol, this.color = ToyColors.success});
+  const _CurrencyField({
+    required this.controller,
+    required this.symbol,
+    this.color = ToyColors.success,
+  });
 
   final TextEditingController controller;
   final String symbol;

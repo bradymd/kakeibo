@@ -43,6 +43,7 @@ class ToyColors {
   static const successDark = Color(0xFF0C6B4E);
   static const mint = Color(0xFFD8F6EA);
   static const dangerHeader = Color(0xFF8E3550); // over-budget header
+  static const dangerHeaderSubtitle = Color(0xFFFFC9D8); // subtitle on it
   static const danger = Color(0xFFB3243F);
   static const dangerHatch = Color(0xFF7A0F27);
   static const wolfCard = Color(0xFF3A2A2F);
