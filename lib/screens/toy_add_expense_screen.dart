@@ -8,6 +8,7 @@ import 'package:kakeibo/providers/settings_provider.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
 import 'package:kakeibo/utils/date_utils.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';
+import 'package:kakeibo/widgets/toy/toy_description_field.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 import 'package:intl/intl.dart';
 
@@ -274,19 +275,20 @@ class _ToyAddExpenseScreenState extends ConsumerState<ToyAddExpenseScreen> {
                   Expanded(
                     flex: 2,
                     child: _FieldPill(
-                      child: TextField(
+                      child: ToyDescriptionField(
                         controller: _descController,
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          hintText: 'Description',
-                          hintStyle: ToyTextStyles.rowTitle(
-                            fontSize: 13,
-                            color: ToyColors.placeholder,
-                          ),
-                          isDense: true,
-                        ),
-                        style: ToyTextStyles.rowTitle(fontSize: 13),
-                        textCapitalization: TextCapitalization.sentences,
+                        findMatch: (prefix) => ref
+                            .read(kakeiboMonthsProvider.notifier)
+                            .findDescriptionMatch(prefix),
+                        onCompletionAccepted: (category) {
+                          // Never overwrite a category the user already
+                          // chose or typed themselves.
+                          if (_categoryController.text.trim().isEmpty &&
+                              category.isNotEmpty) {
+                            setState(() => _categoryController.text = category);
+                          }
+                        },
+                        onChanged: () => setState(() {}),
                       ),
                     ),
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kakeibo/database/database_provider.dart' show DescriptionMatch;
 import 'package:kakeibo/models/kakeibo_month.dart';
 import 'package:kakeibo/models/pillar.dart';
 import 'package:kakeibo/providers/database_provider.dart';
@@ -192,6 +193,13 @@ class KakeiboMonthsNotifier extends AsyncNotifier<List<KakeiboMonth>> {
   Future<List<String>> getAllFixedExpenseCategories() async {
     final db = ref.read(databaseProvider);
     return db.getAllFixedExpenseCategories();
+  }
+
+  /// Best match for a partial description typed on Add Expense, searched
+  /// across every month. See `DatabaseProvider.findDescriptionMatch`.
+  Future<DescriptionMatch?> findDescriptionMatch(String prefix) async {
+    final db = ref.read(databaseProvider);
+    return db.findDescriptionMatch(prefix);
   }
 
   // --- Spend category suggestions ---

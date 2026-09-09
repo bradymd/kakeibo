@@ -237,6 +237,11 @@ class _ToySettingsScreenState extends ConsumerState<ToySettingsScreen> {
                   value: '4 pillars',
                   onTap: () => context.push('/rename-categories'),
                 ),
+                const DashedDivider(),
+                ToySettingsRow(
+                  label: 'Manage spend categories',
+                  onTap: () => context.push('/manage-expense-categories'),
+                ),
               ],
             ),
           ),

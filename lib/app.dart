@@ -14,6 +14,7 @@ import 'package:kakeibo/screens/toy_fixed_expenses_screen.dart';
 import 'package:kakeibo/screens/toy_home_screen.dart';
 import 'package:kakeibo/screens/toy_import_screen.dart';
 import 'package:kakeibo/screens/toy_income_screen.dart';
+import 'package:kakeibo/screens/toy_manage_expense_categories_screen.dart';
 import 'package:kakeibo/screens/toy_payday_settings_screen.dart';
 import 'package:kakeibo/screens/toy_reflection_screen.dart';
 import 'package:kakeibo/screens/toy_rename_categories_screen.dart';
@@ -130,6 +131,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/rename-categories',
       builder: (context, state) => const ToyRenameCategoriesScreen(),
+    ),
+    GoRoute(
+      path: '/manage-expense-categories',
+      builder: (context, state) => const ToyManageExpenseCategoriesScreen(),
     ),
     GoRoute(
       path: '/payday-settings',

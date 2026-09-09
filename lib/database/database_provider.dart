@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:kakeibo/constants/expense_categories.dart';
 import 'package:kakeibo/models/kakeibo_month.dart' as models;
 import 'package:kakeibo/models/pillar.dart';
@@ -103,6 +104,14 @@ class AppSettings extends Table {
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
+
+  /// Test-only entry point: bypasses the real app-documents-directory
+  /// lookup and background isolate so a test can point the database at a
+  /// temp file and control sqlite3 library resolution directly (the
+  /// override that FFI-based tests need doesn't propagate into the
+  /// background isolate `_openConnection` normally spawns).
+  @visibleForTesting
+  AppDatabase.forTesting(super.executor);
 
   @override
   int get schemaVersion => 5;
@@ -437,6 +446,29 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
+  // --- Description autocomplete ---
+
+  /// The single best match for a partial [prefix] typed into the Description
+  /// field, searched across every month (not just the current one) so a
+  /// merchant logged last month still autocompletes today. Case-insensitive
+  /// starts-with match, most-recently-used description wins when more than
+  /// one matches (e.g. "Te" matching both "Tesco" and "Ted's Garage" prefers
+  /// whichever was logged more recently). Returns null for an empty/blank
+  /// prefix or no match.
+  Future<DescriptionMatch?> findDescriptionMatch(String prefix) async {
+    final trimmed = prefix.trim();
+    if (trimmed.isEmpty) return null;
+    final query = select(expenses)
+      ..where((t) => t.description.like('$trimmed%'))
+      ..orderBy([
+        (t) => OrderingTerm.desc(t.createdAt),
+      ])
+      ..limit(1);
+    final row = await query.getSingleOrNull();
+    if (row == null) return null;
+    return DescriptionMatch(description: row.description, category: row.category ?? '');
+  }
+
   // --- Spend category suggestions ---
   //
   // A standalone catalogue, deliberately not derived from `Expenses` rows --
@@ -625,6 +657,14 @@ class IncomeSearchResult {
     required this.year,
     required this.month,
   });
+}
+
+/// A past expense description matching a typed prefix, plus the category
+/// it was last logged under (empty if it never had one).
+class DescriptionMatch {
+  final String description;
+  final String category;
+  const DescriptionMatch({required this.description, required this.category});
 }
 
 LazyDatabase _openConnection() {
