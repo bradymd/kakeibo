@@ -53,8 +53,13 @@ class ToyCapsuleFilter extends StatelessWidget {
   }
 }
 
-/// Horizontal scrollable row of [ToyCapsuleFilter]s with the README's
-/// gaps/padding (`padding: 12 14 10`, `gap: 7`).
+/// Row of [ToyCapsuleFilter]s with the README's gaps/padding
+/// (`padding: 12 14 10`, `gap: 7`). Wraps onto additional lines rather
+/// than scrolling horizontally -- this is a primary filter control always
+/// visible at the top of the screen, and a horizontal scroller here had
+/// the same "cuts off with no hint there's more" problem the category
+/// chips had (reported: on a narrower window/phone, capsules past
+/// "Wants" or so just disappeared off the right edge).
 class ToyCapsuleFilterRow extends StatelessWidget {
   const ToyCapsuleFilterRow({super.key, required this.children});
 
@@ -62,16 +67,12 @@ class ToyCapsuleFilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    return Padding(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-      child: Row(
-        children: [
-          for (var i = 0; i < children.length; i++) ...[
-            if (i > 0) const SizedBox(width: ToyMetrics.pillGap),
-            children[i],
-          ],
-        ],
+      child: Wrap(
+        spacing: ToyMetrics.pillGap,
+        runSpacing: ToyMetrics.pillGap,
+        children: children,
       ),
     );
   }
