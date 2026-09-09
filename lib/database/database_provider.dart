@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:kakeibo/constants/expense_categories.dart';
 import 'package:kakeibo/models/kakeibo_month.dart' as models;
 import 'package:kakeibo/models/pillar.dart';
 import 'package:path/path.dart' as p;
@@ -108,7 +109,10 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) => m.createAll(),
+        onCreate: (m) async {
+          await m.createAll();
+          await _seedDefaultExpenseCategorySuggestions();
+        },
         onUpgrade: (m, from, to) async {
           if (from < 2) {
             await m.createTable(incomeSources);
@@ -122,9 +126,28 @@ class AppDatabase extends _$AppDatabase {
           if (from < 5) {
             await m.addColumn(expenses, expenses.category);
             await m.createTable(expenseCategorySuggestions);
+            await _seedDefaultExpenseCategorySuggestions();
           }
         },
       );
+
+  /// Populates the suggestion catalogue with `defaultExpenseCategories`
+  /// (Groceries, Dining, etc.) so Add Expense always has something to
+  /// offer, even before the user has typed a category themselves --
+  /// mirroring Fixed Costs' always-present defaults. Unlike Fixed Costs,
+  /// these are real rows in the suggestion table, not a separate
+  /// hardcoded list layered on top, so they can be renamed/hidden like
+  /// any other suggestion.
+  Future<void> _seedDefaultExpenseCategorySuggestions() async {
+    for (var i = 0; i < defaultExpenseCategories.length; i++) {
+      await into(expenseCategorySuggestions).insertOnConflictUpdate(
+        ExpenseCategorySuggestionsCompanion.insert(
+          name: defaultExpenseCategories[i],
+          sortOrder: Value(i),
+        ),
+      );
+    }
+  }
 
   // --- Month operations ---
 
@@ -423,6 +446,14 @@ class AppDatabase extends _$AppDatabase {
   // string they already had regardless of hidden state.
 
   Future<List<String>> getExpenseCategorySuggestions() async {
+    // Lazy backfill: a table with genuinely zero rows (as opposed to
+    // rows that are merely all hidden) means this install never got the
+    // onCreate/onUpgrade seeding -- e.g. a database created between this
+    // feature's schema landing and the seeding being added. Safe to run
+    // every time since insertOnConflictUpdate is a no-op once seeded.
+    final isEmpty = await select(expenseCategorySuggestions).get().then((r) => r.isEmpty);
+    if (isEmpty) await _seedDefaultExpenseCategorySuggestions();
+
     final query = select(expenseCategorySuggestions)
       ..where((t) => t.hidden.equals(false))
       ..orderBy([
