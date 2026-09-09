@@ -54,6 +54,7 @@ flutter:
     - assets/images/wolf-overlay.png
     - assets/images/tip-jar.png
     - assets/images/wolf-please.png
+    - assets/fonts/OFL.txt
 
   # M PLUS Rounded 1c, bundled rather than fetched at runtime via
   # google_fonts -- see lib/theme/toy/toy_text_styles.dart. SIL Open Font
