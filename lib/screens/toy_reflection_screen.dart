@@ -14,7 +14,6 @@ import 'package:kakeibo/theme/toy/toy_theme.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 
 /// The gachapon-redesign End of Month / Reflection screen (README §4b).
-/// New screen, preview-only for now.
 class ToyReflectionScreen extends ConsumerStatefulWidget {
   const ToyReflectionScreen({super.key});
 
@@ -198,7 +197,7 @@ class _ToyReflectionScreenState extends ConsumerState<ToyReflectionScreen> {
                     if (context.canPop()) {
                       context.pop();
                     } else {
-                      context.go('/toy-dashboard');
+                      context.go('/');
                     }
                   }
                 },

@@ -65,7 +65,7 @@ class _ToySearchScreenState extends ConsumerState<ToySearchScreen> {
 
   void _navigateToEditExpense(ExpenseSearchResult result) {
     ref.read(currentMonthIdProvider.notifier).state = result.monthId;
-    context.push('/toy-edit-expense/${result.expense.id}');
+    context.push('/edit-expense/${result.expense.id}');
   }
 
   void _navigateToEditFixedExpense(FixedExpenseSearchResult result) {

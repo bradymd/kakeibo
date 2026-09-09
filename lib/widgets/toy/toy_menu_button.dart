@@ -9,10 +9,10 @@ import 'package:kakeibo/theme/toy/toy_theme.dart';
 /// here rather than split between a tab and a menu — followed by the
 /// genuinely infrequent Settings and About.
 enum _ToyMenuRoute {
-  setup('/toy-setup', '月のはじめ', 'Start of Month', Icons.play_arrow_rounded),
-  reflect('/toy-reflection', '反省', 'End of Month', Icons.self_improvement_rounded),
-  settings('/toy-settings', '設定', 'Settings and Tools', Icons.settings_rounded),
-  about('/toy-about', 'について', 'About Kakeibo', Icons.info_outline_rounded);
+  setup('/setup', '月のはじめ', 'Start of Month', Icons.play_arrow_rounded),
+  reflect('/reflection', '反省', 'End of Month', Icons.self_improvement_rounded),
+  settings('/settings', '設定', 'Settings and Tools', Icons.settings_rounded),
+  about('/about', 'について', 'About Kakeibo', Icons.info_outline_rounded);
 
   const _ToyMenuRoute(this.path, this.japanese, this.label, this.icon);
   final String path;

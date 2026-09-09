@@ -14,9 +14,7 @@ import 'package:kakeibo/theme/toy/toy_theme.dart';
 import 'package:kakeibo/widgets/toy/toy_category_summary_card.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 
-/// The gachapon-redesign Spend screen (README §3a). New screen, reached
-/// only via the preview route added in `lib/app.dart` for now — see
-/// `toy_home_screen.dart` for the same caveat.
+/// The gachapon-redesign Spend screen (README §3a).
 ///
 /// Reuses `currentMonthProvider` directly rather than
 /// `recentExpensesProvider` (which caps at 5) since this screen shows
@@ -101,20 +99,15 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
           headlineFigure:
               '${fmt(filteredTotal)}   ${expenses.length} ${expenses.length == 1 ? 'entry' : 'entries'}',
           tab: ToyTabDestination.spend,
-          tabPathOverrides: const {
-            ToyTabDestination.month: '/toy-dashboard',
-            ToyTabDestination.fixed: '/toy-fixed-expenses',
-            ToyTabDestination.income: '/toy-income',
-          },
           trailing: const ToyMenuButton(),
-          floatingActionButton: ToyFab(onTap: () => context.push('/toy-add-expense')),
+          floatingActionButton: ToyFab(onTap: () => context.push('/add-expense')),
           body: GestureDetector(
             onHorizontalDragEnd: (details) {
               final velocity = details.primaryVelocity ?? 0;
               if (velocity > 300) {
-                SwipeNav.go(context, '/toy-dashboard', SlideDirection.right);
+                SwipeNav.go(context, '/', SlideDirection.right);
               } else if (velocity < -300) {
-                SwipeNav.go(context, '/toy-fixed-expenses', SlideDirection.left);
+                SwipeNav.go(context, '/fixed-expenses', SlideDirection.left);
               }
             },
             behavior: HitTestBehavior.translucent,
@@ -168,7 +161,7 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
                       categorisedCount: ExpenseCategoryStats.categorisedCount(categoryEligible),
                       totalCount: categoryEligible.length,
                       formatAmount: fmt,
-                      onTap: () => context.push('/toy-category-breakdown'),
+                      onTap: () => context.push('/category-breakdown'),
                     ),
                   ),
                 Expanded(
@@ -209,7 +202,7 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
                                           '${expenses[i].pillar.label} ${expenses[i].pillar.japanese} ・ ${DateFormat('d MMM').format(DateTime.parse(expenses[i].date))}',
                                       amountText: fmt(expenses[i].amount),
                                       leading: ToyPillarDot(color: expenses[i].pillar.toyFill),
-                                      onTap: () => context.push('/toy-edit-expense/${expenses[i].id}'),
+                                      onTap: () => context.push('/edit-expense/${expenses[i].id}'),
                                     ),
                                   ),
                                 ],

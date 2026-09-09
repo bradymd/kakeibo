@@ -11,8 +11,7 @@ import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 
-/// The gachapon-redesign Start of Month screen (README §4c). New
-/// screen, preview-only for now.
+/// The gachapon-redesign Start of Month screen (README §4c).
 class ToySetupScreen extends ConsumerStatefulWidget {
   const ToySetupScreen({super.key});
 
@@ -93,7 +92,7 @@ class _ToySetupScreenState extends ConsumerState<ToySetupScreen> {
                 items: currentMonth.incomeSources.map((s) => (s.name, fmt(s.amount))).toList(),
                 total: fmt(totalIncome),
                 totalColor: ToyColors.success,
-                onTap: () => context.push('/toy-income'),
+                onTap: () => context.push('/income'),
               ),
               const SizedBox(height: ToyMetrics.cardGap),
               _SummaryCard(
@@ -104,7 +103,7 @@ class _ToySetupScreenState extends ConsumerState<ToySetupScreen> {
                     .toList(),
                 total: fmt(fixedTotal),
                 totalColor: const Color(0xFF6B34B0),
-                onTap: () => context.push('/toy-fixed-expenses'),
+                onTap: () => context.push('/fixed-expenses'),
                 maxItems: 3,
               ),
               const SizedBox(height: ToyMetrics.cardGap),
@@ -227,7 +226,7 @@ class _ToySetupScreenState extends ConsumerState<ToySetupScreen> {
 
   Widget _paydayHint(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/toy-payday-settings'),
+      onTap: () => context.push('/payday-settings'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(

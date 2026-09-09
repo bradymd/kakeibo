@@ -32,7 +32,6 @@ class ToyTabBar extends StatelessWidget {
     super.key,
     required this.current,
     this.disabled = const {},
-    this.pathOverrides = const {},
   });
 
   /// The currently active destination.
@@ -41,13 +40,6 @@ class ToyTabBar extends StatelessWidget {
   /// Destinations to render disabled (README §5b: before a month is set
   /// up, Spend and Income are disabled).
   final Set<ToyTabDestination> disabled;
-
-  /// Per-destination path overrides, used only while the redesign is
-  /// mid-rollout: screens not yet converted don't have a toy version to
-  /// link to, so a converted screen can point its tab bar at the other
-  /// converted screens' preview routes instead of the real ones. Remove
-  /// once every destination has a converted screen at its real route.
-  final Map<ToyTabDestination, String> pathOverrides;
 
   @override
   Widget build(BuildContext context) {
@@ -68,8 +60,7 @@ class ToyTabBar extends StatelessWidget {
                 destination: ToyTabDestination.values[i],
                 active: ToyTabDestination.values[i] == current,
                 enabled: !disabled.contains(ToyTabDestination.values[i]),
-                path: pathOverrides[ToyTabDestination.values[i]] ??
-                    ToyTabDestination.values[i].path,
+                path: ToyTabDestination.values[i].path,
               ),
             ),
           ],

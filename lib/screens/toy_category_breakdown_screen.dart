@@ -128,7 +128,7 @@ class ToyCategoryBreakdownScreen extends ConsumerWidget {
                                 total: total,
                                 formatAmount: fmt,
                                 onTap: () => context.push(
-                                  '/toy-expenses?category=${Uri.encodeComponent(topFive[i].name)}',
+                                  '/expenses?category=${Uri.encodeComponent(topFive[i].name)}',
                                 ),
                               ),
                             ],
@@ -154,7 +154,7 @@ class ToyCategoryBreakdownScreen extends ConsumerWidget {
                                 total: total,
                                 formatAmount: fmt,
                                 muted: true,
-                                onTap: () => context.push('/toy-expenses'),
+                                onTap: () => context.push('/expenses'),
                               ),
                             ],
                           ],

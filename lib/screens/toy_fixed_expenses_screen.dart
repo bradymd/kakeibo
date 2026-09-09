@@ -9,8 +9,7 @@ import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 
-/// The gachapon-redesign Fixed Costs screen (README §4d). New screen,
-/// preview-only for now.
+/// The gachapon-redesign Fixed Costs screen (README §4d).
 class ToyFixedExpensesScreen extends ConsumerWidget {
   const ToyFixedExpensesScreen({super.key});
 
@@ -44,11 +43,6 @@ class ToyFixedExpensesScreen extends ConsumerWidget {
           subtitle: '$displayMonth ・ ${items.length} ${items.length == 1 ? 'item' : 'items'}',
           headlineFigure: fmt(fixedTotal),
           tab: ToyTabDestination.fixed,
-          tabPathOverrides: const {
-            ToyTabDestination.month: '/toy-dashboard',
-            ToyTabDestination.spend: '/toy-expenses',
-            ToyTabDestination.income: '/toy-income',
-          },
           trailing: const ToyMenuButton(),
           floatingActionButton: ToyFab(onTap: () => context.push('/add-fixed-expense')),
           body: Padding(
@@ -63,7 +57,7 @@ class ToyFixedExpensesScreen extends ConsumerWidget {
               children: [
                 ToyCapsuleButton(
                   label: '先月からコピー ・ Import last month',
-                  onTap: () => context.push('/toy-import-fixed-costs'),
+                  onTap: () => context.push('/import-fixed-costs'),
                 ),
                 const SizedBox(height: ToyMetrics.cardGap),
                 Expanded(

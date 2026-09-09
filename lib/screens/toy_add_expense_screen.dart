@@ -11,8 +11,7 @@ import 'package:kakeibo/theme/toy/toy_theme.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 import 'package:intl/intl.dart';
 
-/// The gachapon-redesign Add Expense screen (README §4a). New screen,
-/// preview-only for now — see `toy_home_screen.dart` for the caveat.
+/// The gachapon-redesign Add Expense screen (README §4a).
 ///
 /// Reordered from the current screen: amount leads. Tapping the amount
 /// field brings up the OS numeric keyboard (not a persistent custom

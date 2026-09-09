@@ -229,13 +229,13 @@ class _ToySettingsScreenState extends ConsumerState<ToySettingsScreen> {
                 ToySettingsRow(
                   label: 'Payday',
                   value: PaydayCalculator.presetLabel(ref.watch(paydayPresetProvider)),
-                  onTap: () => context.push('/toy-payday-settings'),
+                  onTap: () => context.push('/payday-settings'),
                 ),
                 const DashedDivider(),
                 ToySettingsRow(
                   label: 'Rename categories',
                   value: '4 pillars',
-                  onTap: () => context.push('/toy-rename-categories'),
+                  onTap: () => context.push('/rename-categories'),
                 ),
               ],
             ),
@@ -277,13 +277,13 @@ class _ToySettingsScreenState extends ConsumerState<ToySettingsScreen> {
                 ToySettingsRow(
                   label: 'Import fixed costs',
                   value: 'From a past month',
-                  onTap: () => context.push('/toy-import-fixed-costs'),
+                  onTap: () => context.push('/import-fixed-costs'),
                 ),
                 const DashedDivider(),
                 ToySettingsRow(
                   label: 'Search',
                   value: 'Find anything',
-                  onTap: () => context.push('/toy-search'),
+                  onTap: () => context.push('/search'),
                 ),
               ],
             ),
@@ -296,7 +296,7 @@ class _ToySettingsScreenState extends ConsumerState<ToySettingsScreen> {
               children: [
                 ToySettingsRow(
                   label: 'About Kakeibo',
-                  onTap: () => context.push('/toy-about'),
+                  onTap: () => context.push('/about'),
                 ),
                 const DashedDivider(),
                 FutureBuilder<PackageInfo>(

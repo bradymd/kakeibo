@@ -4,9 +4,7 @@ import 'package:kakeibo/theme/toy/toy_theme.dart';
 import 'package:kakeibo/widgets/toy/toy_tab_bar.dart';
 
 /// The toy-themed screen scaffold (README "Global chrome" + per-screen
-/// headers). New widget, parallel to the existing `KakeiboScaffold` —
-/// screens migrate to this one at a time per the redesign's rollout
-/// order, rather than all at once.
+/// headers), used by every screen in the app.
 ///
 /// Header: fill [headerColor] (default brand pink) with the diagonal
 /// stripe overlay, padding `14 20 16`, white text. Optional back arrow,
@@ -26,7 +24,6 @@ class ToyScaffold extends StatelessWidget {
     required this.body,
     this.tab,
     this.disabledTabs = const {},
-    this.tabPathOverrides = const {},
     this.showBackButton = false,
     this.onBack,
     this.trailing,
@@ -53,11 +50,6 @@ class ToyScaffold extends StatelessWidget {
   /// screens use a back arrow instead — see README "Global chrome").
   final ToyTabDestination? tab;
   final Set<ToyTabDestination> disabledTabs;
-
-  /// See `ToyTabBar.pathOverrides` — mid-rollout escape hatch, remove
-  /// once every tab destination has a converted screen at its real
-  /// route.
-  final Map<ToyTabDestination, String> tabPathOverrides;
 
   final bool showBackButton;
   final VoidCallback? onBack;
@@ -96,7 +88,6 @@ class ToyScaffold extends StatelessWidget {
             ToyTabBar(
               current: tab!,
               disabled: disabledTabs,
-              pathOverrides: tabPathOverrides,
             ),
         ],
       ),

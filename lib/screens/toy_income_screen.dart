@@ -49,11 +49,6 @@ class ToyIncomeScreen extends ConsumerWidget {
           subtitle: '$displayMonth ・ ${sources.length} ${sources.length == 1 ? 'source' : 'sources'}',
           headlineFigure: fmt(totalIncome),
           tab: ToyTabDestination.income,
-          tabPathOverrides: const {
-            ToyTabDestination.month: '/toy-dashboard',
-            ToyTabDestination.spend: '/toy-expenses',
-            ToyTabDestination.fixed: '/toy-fixed-expenses',
-          },
           trailing: const ToyMenuButton(),
           floatingActionButton: ToyFab(onTap: () => context.push('/add-income')),
           body: SingleChildScrollView(
@@ -68,7 +63,7 @@ class ToyIncomeScreen extends ConsumerWidget {
               children: [
                 ToyCapsuleButton(
                   label: '先月からコピー ・ Import last month',
-                  onTap: () => context.push('/toy-import-income'),
+                  onTap: () => context.push('/import-income'),
                 ),
                 const SizedBox(height: ToyMetrics.cardGap),
                 if (sources.isEmpty)
@@ -105,7 +100,7 @@ class ToyIncomeScreen extends ConsumerWidget {
                 if (paydayPreset == PaydayPreset.none) ...[
                   const SizedBox(height: ToyMetrics.cardGap),
                   GestureDetector(
-                    onTap: () => context.push('/toy-payday-settings'),
+                    onTap: () => context.push('/payday-settings'),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(

@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:kakeibo/models/kakeibo_month.dart';
 import 'package:kakeibo/providers/kakeibo_provider.dart';
 import 'package:kakeibo/providers/settings_provider.dart';
-import 'package:kakeibo/screens/import_screen.dart' show ImportType;
+import 'package:kakeibo/models/import_type.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
 import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';

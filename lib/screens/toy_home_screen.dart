@@ -80,21 +80,16 @@ class ToyHomeScreen extends ConsumerWidget {
       disabledTabs: isSetup
           ? const {}
           : const {ToyTabDestination.spend, ToyTabDestination.income},
-      tabPathOverrides: const {
-        ToyTabDestination.spend: '/toy-expenses',
-        ToyTabDestination.fixed: '/toy-fixed-expenses',
-        ToyTabDestination.income: '/toy-income',
-      },
       trailing: const ToyMenuButton(),
       floatingActionButton:
-          isSetup ? ToyFab(onTap: () => context.push('/toy-add-expense')) : null,
+          isSetup ? ToyFab(onTap: () => context.push('/add-expense')) : null,
       body: GestureDetector(
         onHorizontalDragEnd: (details) {
           final velocity = details.primaryVelocity ?? 0;
           if (velocity > 300) {
-            SwipeNav.go(context, '/toy-expenses', SlideDirection.left);
+            SwipeNav.go(context, '/expenses', SlideDirection.left);
           } else if (velocity < -300) {
-            SwipeNav.go(context, '/toy-fixed-expenses', SlideDirection.right);
+            SwipeNav.go(context, '/fixed-expenses', SlideDirection.right);
           }
         },
         behavior: HitTestBehavior.translucent,
@@ -349,7 +344,7 @@ class _CapsuleDomeCard extends StatelessWidget {
                       // Spend tab yourself, just pre-filtered. Keeps
                       // this consistent with every other tab move (no
                       // stack depth created, so no back arrow needed).
-                      onTap: () => context.go('/toy-expenses?pillar=${pillar.name}'),
+                      onTap: () => context.go('/expenses?pillar=${pillar.name}'),
                     ),
                 ],
               ),
@@ -579,7 +574,7 @@ class _RecentExpensesCard extends ConsumerWidget {
                 ),
                 if (hasAnyExpenses)
                   GestureDetector(
-                    onTap: () => context.push('/toy-expenses'),
+                    onTap: () => context.push('/expenses'),
                     child: Text(
                       'See all',
                       style: ToyTextStyles.label(
@@ -609,7 +604,7 @@ class _RecentExpensesCard extends ConsumerWidget {
                     '${expenses[i].pillar.label} ${expenses[i].pillar.japanese} ・ ${DateFormat('d MMM').format(DateTime.parse(expenses[i].date))}',
                 amountText: formatAmount(expenses[i].amount),
                 leading: ToyPillarDot(color: expenses[i].pillar.toyFill),
-                onTap: () => context.push('/toy-edit-expense/${expenses[i].id}'),
+                onTap: () => context.push('/edit-expense/${expenses[i].id}'),
               ),
             ],
         ],
@@ -662,11 +657,11 @@ class _NotSetUpState extends StatelessWidget {
             const SizedBox(height: 20),
             ToyPrimaryButton(
               label: 'はじめる ・ Set Up Month',
-              onTap: () => context.push('/toy-setup'),
+              onTap: () => context.push('/setup'),
             ),
             const SizedBox(height: 12),
             GestureDetector(
-              onTap: () => context.push('/toy-import-fixed-costs'),
+              onTap: () => context.push('/import-fixed-costs'),
               child: Text(
                 'Copy everything from January',
                 style: ToyTextStyles.label(
