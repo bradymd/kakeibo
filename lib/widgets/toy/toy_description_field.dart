@@ -2,35 +2,42 @@ import 'package:flutter/material.dart';
 import 'package:kakeibo/database/database_provider.dart' show DescriptionMatch;
 import 'package:kakeibo/theme/toy/toy_theme.dart';
 
-/// Description field with inline ghost-text completion: as the user types,
-/// the rest of the best-matching past description appears greyed-out right
-/// after the cursor (like a search bar); tapping the ghost text accepts it.
-/// Ignoring it (typing on, or just leaving the field) does nothing; it's a
-/// pure suggestion.
+/// A completely ordinary Description TextField that reports live matches
+/// via [onMatchChanged] as the user types, for the caller to render as a
+/// separate suggestion row below the field.
 ///
-/// Accepting a completion also reports the category that description was
-/// last logged under, via [onCompletionAccepted], so the caller can
-/// auto-fill Category -- but only when Category is still empty, never
-/// overwriting a choice the user already made themselves.
+/// Rebuilt after the original inline-ghost-text version (a Stack: a
+/// RichText behind a transparent TextField, meant to show the completion
+/// after the cursor like a search bar) proved fundamentally unreliable --
+/// see /tmp/kakeibo-discussion.txt for the full history. In short:
+/// RichText and TextField/RenderEditable cannot be relied on to produce
+/// identical glyph geometry (different paragraph, padding, scroll offset,
+/// cursor layout), which is what caused the reported overlapping
+/// "squashed fly" text, and wrapping the TextField in a GestureDetector
+/// put it in gesture-arena conflict with the TextField's own tap
+/// recogniser. This version keeps the TextField itself untouched -- no
+/// Stack, no wrapping GestureDetector -- and moves all suggestion
+/// presentation out to a normal in-flow widget the caller controls.
 class ToyDescriptionField extends StatefulWidget {
   const ToyDescriptionField({
     super.key,
     required this.controller,
     required this.findMatch,
-    required this.onCompletionAccepted,
+    required this.onMatchChanged,
     this.onChanged,
   });
 
   final TextEditingController controller;
 
   /// Looks up the best match for a typed prefix. Returns null if nothing
-  /// matches. Debounced/called on every change -- keep this cheap (it's a
-  /// single indexed query in practice).
+  /// matches. Called on every change -- keep this cheap (it's a single
+  /// indexed query in practice).
   final Future<DescriptionMatch?> Function(String prefix) findMatch;
 
-  /// Called when a ghost-text suggestion is accepted, with the matched
-  /// description's last-used category (empty string if it never had one).
-  final void Function(String category) onCompletionAccepted;
+  /// Called whenever the current best match changes (including to null,
+  /// when nothing matches or the field is edited away from a match) --
+  /// the caller uses this to show/hide a suggestion row below the field.
+  final void Function(DescriptionMatch? match) onMatchChanged;
 
   final VoidCallback? onChanged;
 
@@ -39,10 +46,11 @@ class ToyDescriptionField extends StatefulWidget {
 }
 
 class _ToyDescriptionFieldState extends State<ToyDescriptionField> {
-  final _focusNode = FocusNode();
-  DescriptionMatch? _match;
-  // Guards against a slow lookup for an earlier keystroke overwriting the
-  // ghost text for a later one.
+  // Bumped at the very start of every listener invocation, before any
+  // early return -- so a lookup in flight for a since-cleared/since-
+  // changed value is discarded on arrival rather than able to resurrect a
+  // stale suggestion. (The original version incremented this after the
+  // early-return checks, which was itself a real bug -- Codex caught it.)
   int _requestId = 0;
 
   @override
@@ -54,101 +62,40 @@ class _ToyDescriptionFieldState extends State<ToyDescriptionField> {
   @override
   void dispose() {
     widget.controller.removeListener(_onTextChanged);
-    _focusNode.dispose();
     super.dispose();
   }
 
   void _onTextChanged() {
+    final requestId = ++_requestId;
     widget.onChanged?.call();
     final text = widget.controller.text;
-    // Only offer a completion while the cursor sits at the very end --
-    // editing in the middle of existing text shouldn't sprout ghost text.
     final atEnd = widget.controller.selection.baseOffset == text.length;
     if (text.isEmpty || !atEnd) {
-      setState(() => _match = null);
+      widget.onMatchChanged(null);
       return;
     }
-    final requestId = ++_requestId;
     widget.findMatch(text).then((match) {
-      if (!mounted || requestId != _requestId) return;
+      if (requestId != _requestId) return;
       final suggestion = match?.description ?? '';
-      final isRealCompletion =
-          match != null &&
+      final isRealCompletion = match != null &&
           suggestion.toLowerCase().startsWith(text.toLowerCase()) &&
           suggestion.length > text.length;
-      setState(() => _match = isRealCompletion ? match : null);
+      widget.onMatchChanged(isRealCompletion ? match : null);
     });
-  }
-
-  void _accept() {
-    final match = _match;
-    if (match == null) return;
-    widget.controller.value = TextEditingValue(
-      text: match.description,
-      selection: TextSelection.collapsed(offset: match.description.length),
-    );
-    widget.onCompletionAccepted(match.category);
-    setState(() => _match = null);
   }
 
   @override
   Widget build(BuildContext context) {
-    final typed = widget.controller.text;
-    final remainder = _match != null
-        ? _match!.description.substring(typed.length)
-        : '';
-
-    return Stack(
-      alignment: Alignment.centerLeft,
-      children: [
-        if (remainder.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: RichText(
-              text: TextSpan(
-                style: ToyTextStyles.rowTitle(
-                  fontSize: 13,
-                  color: Colors.transparent,
-                ),
-                children: [
-                  TextSpan(text: typed),
-                  TextSpan(
-                    text: remainder,
-                    style: ToyTextStyles.rowTitle(
-                      fontSize: 13,
-                      color: ToyColors.placeholder,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        GestureDetector(
-          onTap: remainder.isNotEmpty ? _accept : null,
-          behavior: HitTestBehavior.translucent,
-          child: TextField(
-            controller: widget.controller,
-            focusNode: _focusNode,
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              // The app-wide theme fills every TextField with an opaque
-              // background by default (InputDecorationTheme.filled) --
-              // override that here, otherwise it paints over the ghost
-              // text sitting underneath in the Stack.
-              filled: false,
-              fillColor: Colors.transparent,
-              hintText: 'Description',
-              hintStyle: ToyTextStyles.rowTitle(
-                fontSize: 13,
-                color: ToyColors.placeholder,
-              ),
-              isDense: true,
-            ),
-            style: ToyTextStyles.rowTitle(fontSize: 13),
-            textCapitalization: TextCapitalization.sentences,
-          ),
-        ),
-      ],
+    return TextField(
+      controller: widget.controller,
+      decoration: InputDecoration(
+        border: InputBorder.none,
+        hintText: 'Description',
+        hintStyle: ToyTextStyles.rowTitle(fontSize: 13, color: ToyColors.placeholder),
+        isDense: true,
+      ),
+      style: ToyTextStyles.rowTitle(fontSize: 13),
+      textCapitalization: TextCapitalization.sentences,
     );
   }
 }

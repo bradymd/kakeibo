@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kakeibo/database/database_provider.dart' show DescriptionMatch;
 import 'package:kakeibo/models/kakeibo_month.dart';
 import 'package:kakeibo/models/pillar.dart';
 import 'package:kakeibo/providers/kakeibo_provider.dart';
@@ -39,6 +40,11 @@ class _ToyAddExpenseScreenState extends ConsumerState<ToyAddExpenseScreen> {
   String _date = todayIso();
   KakeiboExpense? _editing;
   bool _fieldsPopulated = false;
+
+  /// Live description-autocomplete suggestion, rendered as a separate row
+  /// below the Description/Date fields rather than inline -- see
+  /// toy_description_field.dart for why.
+  DescriptionMatch? _descriptionMatch;
 
   /// Whether this route was reached in edit intent, independent of
   /// whether the expense data has actually loaded yet. Reading the
@@ -282,14 +288,8 @@ class _ToyAddExpenseScreenState extends ConsumerState<ToyAddExpenseScreen> {
                         findMatch: (prefix) => ref
                             .read(kakeiboMonthsProvider.notifier)
                             .findDescriptionMatch(prefix),
-                        onCompletionAccepted: (category) {
-                          // Never overwrite a category the user already
-                          // chose or typed themselves.
-                          if (_categoryController.text.trim().isEmpty &&
-                              category.isNotEmpty) {
-                            setState(() => _categoryController.text = category);
-                          }
-                        },
+                        onMatchChanged: (match) =>
+                            setState(() => _descriptionMatch = match),
                         onChanged: () => setState(() {}),
                       ),
                     ),
@@ -324,6 +324,34 @@ class _ToyAddExpenseScreenState extends ConsumerState<ToyAddExpenseScreen> {
                     ),
                   ),
                 ],
+              ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 150),
+                alignment: Alignment.topCenter,
+                child: _descriptionMatch == null
+                    ? const SizedBox(width: double.infinity)
+                    : Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: _DescriptionSuggestionRow(
+                          match: _descriptionMatch!,
+                          onAccept: () {
+                            final match = _descriptionMatch!;
+                            _descController.value = TextEditingValue(
+                              text: match.description,
+                              selection: TextSelection.collapsed(
+                                offset: match.description.length,
+                              ),
+                            );
+                            // Never overwrite a category the user already
+                            // chose or typed themselves.
+                            if (_categoryController.text.trim().isEmpty &&
+                                match.category.isNotEmpty) {
+                              _categoryController.text = match.category;
+                            }
+                            setState(() => _descriptionMatch = null);
+                          },
+                        ),
+                      ),
               ),
               const SizedBox(height: ToyMetrics.cardGap),
               _CategoryField(
@@ -512,6 +540,61 @@ class _CategoryField extends ConsumerWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// The description-autocomplete suggestion, shown as a compact full-width
+/// row below the Description/Date fields once a real match is current --
+/// e.g. "↳ Tesco · Groceries [Use]". A real in-flow widget (not an
+/// overlay), so it can't be clipped by the keyboard or a route transition,
+/// and it's a genuine tap target rather than a font-matched illusion.
+class _DescriptionSuggestionRow extends StatelessWidget {
+  const _DescriptionSuggestionRow({required this.match, required this.onAccept});
+
+  final DescriptionMatch match;
+  final VoidCallback onAccept;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = match.category.isEmpty
+        ? match.description
+        : '${match.description} · ${match.category}';
+    return Semantics(
+      button: true,
+      label: 'Use $label',
+      child: Material(
+        color: ToyColors.bg,
+        borderRadius: BorderRadius.circular(ToyMetrics.tileRadius),
+        child: InkWell(
+          onTap: onAccept,
+          borderRadius: BorderRadius.circular(ToyMetrics.tileRadius),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              children: [
+                Text('↳ ', style: ToyTextStyles.label(fontSize: 13, color: ToyColors.muted2)),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: ToyTextStyles.rowTitle(fontSize: 12.5, color: ToyColors.muted),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+                Text(
+                  'Use',
+                  style: ToyTextStyles.label(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: ToyColors.brand,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
