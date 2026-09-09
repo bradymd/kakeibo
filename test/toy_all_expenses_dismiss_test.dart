@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:kakeibo/models/kakeibo_month.dart';
 import 'package:kakeibo/models/pillar.dart';
 import 'package:kakeibo/providers/kakeibo_provider.dart';
@@ -43,11 +42,6 @@ class _DelayedDeleteNotifier extends KakeiboMonthsNotifier {
 }
 
 void main() {
-  // ToyTextStyles routes every style through GoogleFonts.mPlusRounded1c,
-  // which otherwise attempts a real network fetch under `flutter test`'s
-  // offline sandbox.
-  GoogleFonts.config.allowRuntimeFetching = false;
-
   testWidgets(
       'a slow delete does not trip a "still part of the tree" assertion',
       (tester) async {

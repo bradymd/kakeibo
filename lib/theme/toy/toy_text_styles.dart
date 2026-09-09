@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:kakeibo/theme/toy/toy_colors.dart';
 
 /// Text styles for the "gachapon" redesign.
 ///
 /// One family throughout — M PLUS Rounded 1c — for both Japanese and
-/// Latin text, at weights 500/600/700/800/900. Sizes follow the design
-/// handoff README's typography table.
+/// Latin text, at weights 500/700/800/900 (there is no native 600; see
+/// the note on [body]). Sizes follow the design handoff README's
+/// typography table.
+///
+/// Bundled as a Flutter asset (pubspec.yaml, assets/fonts/) rather than
+/// fetched at runtime via google_fonts -- the previous approach meant
+/// first launch contacted fonts.gstatic.com, could render fallback
+/// typography or log a load failure entirely offline, and made widget
+/// tests network-sensitive (google_fonts' allowRuntimeFetching had to be
+/// disabled per-test to avoid exactly that). SIL Open Font License,
+/// confirmed via the font files' own embedded metadata.
 class ToyTextStyles {
   const ToyTextStyles._();
+
+  static const _fontFamily = 'MPLUSRounded1c';
 
   static TextStyle _base({
     required double fontSize,
@@ -17,9 +27,16 @@ class ToyTextStyles {
     double? letterSpacing,
     double? height,
   }) {
-    return GoogleFonts.mPlusRounded1c(
+    return TextStyle(
+      fontFamily: _fontFamily,
       fontSize: fontSize,
-      fontWeight: fontWeight,
+      // The bundled family has no native 600 weight -- explicitly
+      // substitute 500 rather than rely on Flutter's own nearest-weight
+      // matching, whose tie-break behaviour (500 and 700 are both
+      // exactly 100 away from 600) isn't guaranteed to match what
+      // google_fonts' matching resolved w600 to at runtime before this
+      // was bundled.
+      fontWeight: fontWeight == FontWeight.w600 ? FontWeight.w500 : fontWeight,
       color: color,
       letterSpacing: letterSpacing,
       height: height,
@@ -65,6 +82,11 @@ class ToyTextStyles {
       _base(fontSize: fontSize, fontWeight: FontWeight.w900, color: color);
 
   /// Body copy. 12–12.5/500–600, line-height 1.5–1.7.
+  ///
+  /// M PLUS Rounded 1c has no native 600 weight -- a w600 request here
+  /// renders at 500 (the bundled Medium file), matching exactly what
+  /// google_fonts' own closest-available-weight matching already
+  /// resolved w600 to at runtime before this was bundled.
   static TextStyle body({
     double fontSize = 12.5,
     FontWeight fontWeight = FontWeight.w500,

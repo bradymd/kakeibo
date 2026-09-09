@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:kakeibo/database/database_provider.dart' show DescriptionMatch;
 import 'package:kakeibo/widgets/toy/toy_description_field.dart';
 
@@ -11,14 +10,6 @@ import 'package:kakeibo/widgets/toy/toy_description_field.dart';
 /// so this stays independent of both the database layer and the rest of
 /// Add Expense.
 void main() {
-  // GoogleFonts otherwise attempts a real network fetch under `flutter
-  // test`'s offline sandbox and fails -- ToyTextStyles routes every style
-  // through GoogleFonts.mPlusRounded1c. allowRuntimeFetching=false avoids
-  // the network call; any resulting "font not in assets" exception is
-  // asynchronous and cosmetic only (falls back to the platform default
-  // glyph), not a widget-under-test failure.
-  GoogleFonts.config.allowRuntimeFetching = false;
-
   Widget wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
 
   testWidgets('typing a full match calls onMatchChanged with it', (tester) async {

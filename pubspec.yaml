@@ -21,7 +21,6 @@ dependencies:
   json_annotation: ^4.9.0
   intl: ^0.19.0
   uuid: ^4.5.1
-  google_fonts: ^6.2.1
   package_info_plus: ^9.0.0
   in_app_purchase: ^3.3.0
   url_launcher: ^6.3.1
@@ -55,3 +54,28 @@ flutter:
     - assets/images/wolf-overlay.png
     - assets/images/tip-jar.png
     - assets/images/wolf-please.png
+
+  # M PLUS Rounded 1c, bundled rather than fetched at runtime via
+  # google_fonts -- see lib/theme/toy/toy_text_styles.dart. SIL Open Font
+  # License (confirmed via the font files' own embedded metadata), so
+  # bundling/redistribution is permitted. Only the weights actually used
+  # by ToyTextStyles are included (500/700/800/900 + the 400 base weight
+  # GoogleFonts.mPlusRounded1c itself always registers); there is no
+  # native 600 weight -- ToyTextStyles.body's w600 callers already
+  # rendered via the nearest available weight at runtime (500, by
+  # google_fonts' own closest-weight-match logic), so this list
+  # intentionally matches that rather than adding a weight that was
+  # never actually present before.
+  fonts:
+    - family: MPLUSRounded1c
+      fonts:
+        - asset: assets/fonts/MPLUSRounded1c-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/MPLUSRounded1c-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/MPLUSRounded1c-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/MPLUSRounded1c-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/MPLUSRounded1c-Black.ttf
+          weight: 900

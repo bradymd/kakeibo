@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:kakeibo/theme/toy/toy_colors.dart';
 import 'package:kakeibo/theme/toy/toy_metrics.dart';
 
@@ -30,10 +29,16 @@ class ToyTheme {
         brightness: Brightness.light,
       ),
       scaffoldBackgroundColor: ToyColors.bg,
-      textTheme: GoogleFonts.mPlusRounded1cTextTheme().apply(
-        bodyColor: ToyColors.ink,
-        displayColor: ToyColors.ink,
-      ),
+      // Bundled asset font (see toy_text_styles.dart) rather than
+      // google_fonts' runtime-fetched TextTheme -- fontFamily here just
+      // sets the app-wide default; ToyTextStyles explicitly sets it too
+      // on every style it returns, so this mainly covers stray Text
+      // widgets that don't go through ToyTextStyles.
+      textTheme: ThemeData.light().textTheme.apply(
+            fontFamily: 'MPLUSRounded1c',
+            bodyColor: ToyColors.ink,
+            displayColor: ToyColors.ink,
+          ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
