@@ -24,6 +24,10 @@ workflows:
           xcode-project use-profiles
       - name: Get Flutter packages
         script: flutter pub get
+      - name: Analyze
+        script: flutter analyze
+      - name: Test
+        script: flutter test
       - name: Build IPA
         script: flutter build ipa --release --obfuscate --split-debug-info=build/debug-info --export-options-plist=/Users/builder/export_options.plist
     artifacts:
@@ -53,6 +57,10 @@ workflows:
           echo "storeFile=$CM_KEYSTORE_PATH" >> android/key.properties
       - name: Get Flutter packages
         script: flutter pub get
+      - name: Analyze
+        script: flutter analyze
+      - name: Test
+        script: flutter test
       - name: Build AAB
         script: flutter build appbundle --release --obfuscate --split-debug-info=build/debug-info
       - name: Build APK

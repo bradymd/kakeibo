@@ -13,6 +13,16 @@ import 'package:url_launcher/url_launcher.dart';
 class ToyAboutScreen extends ConsumerWidget {
   const ToyAboutScreen({super.key});
 
+  Future<void> _openLink(BuildContext context, String url) async {
+    final uri = Uri.parse(url);
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open $url')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tipJar = ref.watch(tipJarProvider);
@@ -127,14 +137,17 @@ class ToyAboutScreen extends ConsumerWidget {
           const SizedBox(height: ToyMetrics.cardGap),
           ToySettingsRow(
             label: 'Privacy policy',
-            onTap: () {},
+            onTap: () => _openLink(
+              context,
+              'https://bradymd.github.io/kakeibo/privacy-policy.html',
+            ),
           ),
           const DashedDivider(),
           ToySettingsRow(
             label: 'Report a bug on GitHub',
-            onTap: () => launchUrl(
-              Uri.parse('https://bradymd.github.io/kakeibo/'),
-              mode: LaunchMode.externalApplication,
+            onTap: () => _openLink(
+              context,
+              'https://github.com/bradymd/kakeibo/issues',
             ),
           ),
         ],

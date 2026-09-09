@@ -45,6 +45,7 @@ class _ToySettingsScreenState extends ConsumerState<ToySettingsScreen> {
 
       final isMobile = !kIsWeb && (Platform.isIOS || Platform.isAndroid);
       if (isMobile) {
+        if (!mounted) return;
         final box = context.findRenderObject() as RenderBox?;
         final origin = box != null
             ? box.localToGlobal(Offset.zero) & box.size

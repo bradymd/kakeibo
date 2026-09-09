@@ -45,7 +45,6 @@ class BackupService {
     final archive = Archive();
     archive.addFile(ArchiveFile(_dbFileName, bytes.length, bytes));
     final encoded = ZipEncoder().encode(archive);
-    if (encoded == null) throw StateError('Failed to encode ZIP');
 
     final tempDir = await getTemporaryDirectory();
     final timestamp = DateTime.now()
@@ -69,7 +68,6 @@ class BackupService {
     final archive = Archive();
     archive.addFile(ArchiveFile(_dbFileName, bytes.length, bytes));
     final encoded = ZipEncoder().encode(archive);
-    if (encoded == null) return;
 
     final dir = await getApplicationDocumentsDirectory();
     final zipPath = p.join(dir.path, _autoBackupFileName);
