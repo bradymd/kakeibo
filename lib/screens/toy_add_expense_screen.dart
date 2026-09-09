@@ -516,27 +516,28 @@ class _CategoryField extends ConsumerWidget {
         ),
         if (suggestions.isNotEmpty) ...[
           const SizedBox(height: 8),
-          SizedBox(
-            height: 32,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: suggestions.length,
-              separatorBuilder: (context, i) => const SizedBox(width: 6),
-              itemBuilder: (context, i) {
-                final cat = suggestions[i];
-                final selected = controller.text.trim() == cat;
-                return ToyCapsuleButton(
+          // Wraps onto as many lines as needed -- a horizontally scrolling
+          // single line (the original approach) had no visual hint that
+          // more categories existed once there were enough to overflow the
+          // screen width, so a later chip could sit off-screen with no
+          // affordance to reach it.
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final cat in suggestions)
+                ToyCapsuleButton(
                   label: cat,
-                  fillColor: selected ? ToyColors.brand : ToyColors.bg,
-                  shadowColor: selected ? ToyColors.brand : ToyColors.divider,
-                  textColor: selected ? Colors.white : ToyColors.ink,
+                  fillColor: controller.text.trim() == cat ? ToyColors.brand : ToyColors.bg,
+                  shadowColor:
+                      controller.text.trim() == cat ? ToyColors.brand : ToyColors.divider,
+                  textColor: controller.text.trim() == cat ? Colors.white : ToyColors.ink,
                   onTap: () {
-                    controller.text = selected ? '' : cat;
+                    controller.text = controller.text.trim() == cat ? '' : cat;
                     onChanged();
                   },
-                );
-              },
-            ),
+                ),
+            ],
           ),
         ],
       ],
