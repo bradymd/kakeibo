@@ -40,6 +40,17 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
   Pillar? _filterPillar;
   String? _filterCategory;
 
+  /// IDs whose Dismissible has already finished its dismiss animation but
+  /// whose delete is still in flight (deleteExpense awaits a db write
+  /// before invalidating the provider that supplies `expenses`). Filtered
+  /// out of the displayed list immediately, before the first `await`, so
+  /// Dismissible never rebuilds with the same key still present -- doing
+  /// that violates its contract ("A dismissed Dismissible widget is still
+  /// part of the tree") and Flutter paints its debug ErrorWidget (small
+  /// yellow text on dark red) for however long the delete takes. Root
+  /// cause + fix per Codex's review in /tmp/kakeibo-discussion.txt.
+  final _pendingDeletionIds = <String>{};
+
   @override
   void initState() {
     super.initState();
@@ -70,7 +81,9 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
         body: Center(child: Text('Error: $e')),
       ),
       data: (currentMonth) {
-        var expenses = [...currentMonth.expenses]
+        var expenses = currentMonth.expenses
+            .where((e) => !_pendingDeletionIds.contains(e.id))
+            .toList()
           ..sort((a, b) {
             final cmp = b.date.compareTo(a.date);
             return cmp != 0 ? cmp : b.createdAt.compareTo(a.createdAt);
@@ -193,9 +206,7 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
                                       child: const Icon(Icons.delete_rounded, color: Colors.white),
                                     ),
                                     confirmDismiss: (_) => _confirmDelete(context, expenses[i].description),
-                                    onDismissed: (_) => ref
-                                        .read(kakeiboMonthsProvider.notifier)
-                                        .deleteExpense(expenses[i].id),
+                                    onDismissed: (_) => _deleteExpense(expenses[i].id),
                                     child: ToyRow(
                                       title: expenses[i].description,
                                       meta:
@@ -251,6 +262,30 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
       ),
     );
     return confirmed ?? false;
+  }
+
+  /// Called from Dismissible.onDismissed, which requires the dismissed
+  /// widget to be gone from the tree by the time this returns -- filtering
+  /// `id` out of the build()-time `expenses` list via setState here does
+  /// that synchronously, before the `await` below ever runs. See
+  /// _pendingDeletionIds' doc comment for the bug this fixes.
+  Future<void> _deleteExpense(String id) async {
+    setState(() => _pendingDeletionIds.add(id));
+    try {
+      await ref.read(kakeiboMonthsProvider.notifier).deleteExpense(id);
+      // Left in _pendingDeletionIds even after success: the provider
+      // reload triggered by deleteExpense is itself async and not
+      // awaited here, so clearing the ID immediately could momentarily
+      // reintroduce the row before that reload lands. It naturally stops
+      // mattering once fresh data no longer contains this id at all.
+    } catch (_) {
+      if (mounted) {
+        setState(() => _pendingDeletionIds.remove(id));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not delete expense. Please try again.')),
+        );
+      }
+    }
   }
 }
 
