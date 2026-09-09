@@ -225,7 +225,8 @@ class _ToySearchScreenState extends ConsumerState<ToySearchScreen> {
     for (final r in expenses) {
       rows.add(ToyRow(
         title: r.expense.description,
-        meta: '${r.expense.pillar.label} ${r.expense.pillar.japanese}',
+        meta: '${r.expense.pillar.label} ${r.expense.pillar.japanese}'
+            '${r.expense.category.isEmpty ? '' : ' ・ ${r.expense.category}'}',
         amountText: fmt(r.expense.amount),
         leading: ToyPillarDot(color: r.expense.pillar.toyFill),
         onTap: () => _navigateToEditExpense(r),
