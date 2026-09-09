@@ -199,7 +199,8 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
                                     child: ToyRow(
                                       title: expenses[i].description,
                                       meta:
-                                          '${expenses[i].pillar.label} ${expenses[i].pillar.japanese} ・ ${DateFormat('d MMM').format(DateTime.parse(expenses[i].date))}',
+                                          '${expenses[i].pillar.label} ${expenses[i].pillar.japanese} ・ ${DateFormat('d MMM').format(DateTime.parse(expenses[i].date))}'
+                                          '${expenses[i].category.isEmpty ? '' : ' ・ ${expenses[i].category}'}',
                                       amountText: fmt(expenses[i].amount),
                                       leading: ToyPillarDot(color: expenses[i].pillar.toyFill),
                                       onTap: () => context.push('/edit-expense/${expenses[i].id}'),
