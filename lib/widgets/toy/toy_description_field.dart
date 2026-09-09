@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:kakeibo/database/database_provider.dart' show DescriptionMatch;
 import 'package:kakeibo/theme/toy/toy_theme.dart';
 
 /// Description field with inline ghost-text completion: as the user types,
 /// the rest of the best-matching past description appears greyed-out right
-/// after the cursor (like a search bar), and pressing the right arrow key
-/// -- or tapping the ghost text itself -- accepts it. Ignoring it (typing
-/// on, or just leaving the field) does nothing; it's a pure suggestion.
+/// after the cursor (like a search bar); tapping the ghost text accepts it.
+/// Ignoring it (typing on, or just leaving the field) does nothing; it's a
+/// pure suggestion.
 ///
 /// Accepting a completion also reports the category that description was
 /// last logged under, via [onCompletionAccepted], so the caller can
@@ -73,7 +72,8 @@ class _ToyDescriptionFieldState extends State<ToyDescriptionField> {
     widget.findMatch(text).then((match) {
       if (!mounted || requestId != _requestId) return;
       final suggestion = match?.description ?? '';
-      final isRealCompletion = match != null &&
+      final isRealCompletion =
+          match != null &&
           suggestion.toLowerCase().startsWith(text.toLowerCase()) &&
           suggestion.length > text.length;
       setState(() => _match = isRealCompletion ? match : null);
@@ -94,55 +94,61 @@ class _ToyDescriptionFieldState extends State<ToyDescriptionField> {
   @override
   Widget build(BuildContext context) {
     final typed = widget.controller.text;
-    final remainder =
-        _match != null ? _match!.description.substring(typed.length) : '';
+    final remainder = _match != null
+        ? _match!.description.substring(typed.length)
+        : '';
 
-    return KeyboardListener(
-      focusNode: FocusNode(skipTraversal: true, canRequestFocus: false),
-      onKeyEvent: (event) {
-        if (_match != null &&
-            event is KeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.arrowRight) {
-          _accept();
-        }
-      },
-      child: Stack(
-        alignment: Alignment.centerLeft,
-        children: [
-          if (remainder.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: RichText(
-                text: TextSpan(
-                  style: ToyTextStyles.rowTitle(fontSize: 13, color: Colors.transparent),
-                  children: [
-                    TextSpan(text: typed),
-                    TextSpan(
-                      text: remainder,
-                      style: ToyTextStyles.rowTitle(fontSize: 13, color: ToyColors.placeholder),
-                    ),
-                  ],
+    return Stack(
+      alignment: Alignment.centerLeft,
+      children: [
+        if (remainder.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: RichText(
+              text: TextSpan(
+                style: ToyTextStyles.rowTitle(
+                  fontSize: 13,
+                  color: Colors.transparent,
                 ),
+                children: [
+                  TextSpan(text: typed),
+                  TextSpan(
+                    text: remainder,
+                    style: ToyTextStyles.rowTitle(
+                      fontSize: 13,
+                      color: ToyColors.placeholder,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          GestureDetector(
-            onTap: remainder.isNotEmpty ? _accept : null,
-            behavior: HitTestBehavior.translucent,
-            child: TextField(
-              controller: widget.controller,
-              focusNode: _focusNode,
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: 'Description',
-                hintStyle: ToyTextStyles.rowTitle(fontSize: 13, color: ToyColors.placeholder),
-                isDense: true,
-              ),
-              style: ToyTextStyles.rowTitle(fontSize: 13),
-              textCapitalization: TextCapitalization.sentences,
             ),
           ),
-        ],
-      ),
+        GestureDetector(
+          onTap: remainder.isNotEmpty ? _accept : null,
+          behavior: HitTestBehavior.translucent,
+          child: TextField(
+            controller: widget.controller,
+            focusNode: _focusNode,
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              // The app-wide theme fills every TextField with an opaque
+              // background by default (InputDecorationTheme.filled) --
+              // override that here, otherwise it paints over the ghost
+              // text sitting underneath in the Stack.
+              filled: false,
+              fillColor: Colors.transparent,
+              hintText: 'Description',
+              hintStyle: ToyTextStyles.rowTitle(
+                fontSize: 13,
+                color: ToyColors.placeholder,
+              ),
+              isDense: true,
+            ),
+            style: ToyTextStyles.rowTitle(fontSize: 13),
+            textCapitalization: TextCapitalization.sentences,
+          ),
+        ),
+      ],
     );
   }
 }

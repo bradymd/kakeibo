@@ -6,6 +6,7 @@ import 'package:kakeibo/models/pillar.dart';
 import 'package:kakeibo/providers/kakeibo_provider.dart';
 import 'package:kakeibo/providers/settings_provider.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
+import 'package:kakeibo/utils/currency_input_formatters.dart';
 import 'package:kakeibo/utils/date_utils.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';
 import 'package:kakeibo/widgets/toy/toy_description_field.dart';
@@ -228,6 +229,7 @@ class _ToyAddExpenseScreenState extends ConsumerState<ToyAddExpenseScreen> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  inputFormatters: currencyInputFormatters,
                   textAlign: TextAlign.center,
                   style: ToyTextStyles.hero(fontSize: 46),
                   decoration: InputDecoration(

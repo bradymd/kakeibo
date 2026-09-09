@@ -6,6 +6,7 @@ import 'package:kakeibo/providers/kakeibo_provider.dart';
 import 'package:kakeibo/providers/settings_provider.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';
+import 'package:kakeibo/utils/currency_input_formatters.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 
 /// The gachapon-restyled Add/Edit Income screen. Logic reused verbatim
@@ -173,6 +174,7 @@ class _ToyAddIncomeScreenState extends ConsumerState<ToyAddIncomeScreen> {
                   controller: _amountController,
                   autofocus: !isEditing,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: currencyInputFormatters,
                   textAlign: TextAlign.center,
                   style: ToyTextStyles.hero(fontSize: 46),
                   decoration: InputDecoration(
