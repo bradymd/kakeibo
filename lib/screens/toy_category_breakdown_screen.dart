@@ -42,9 +42,10 @@ class ToyCategoryBreakdownScreen extends ConsumerWidget {
         final total = all.fold(0.0, (sum, s) => sum + s.total);
 
         final topFive = named.take(_maxSlices).toList();
-        final restTotal =
-            named.skip(_maxSlices).fold(0.0, (sum, s) => sum + s.total);
-        final restCount = named.skip(_maxSlices).fold(0, (sum, s) => sum + s.count);
+        final rest = named.skip(_maxSlices).toList();
+        final restTotal = rest.fold(0.0, (sum, s) => sum + s.total);
+        final restCount = rest.fold(0, (sum, s) => sum + s.count);
+        final restNames = rest.map((s) => s.name).toSet();
 
         // Slices for the donut: top five, an "Other" bucket for the rest
         // of the named categories, then Uncategorised last and muted.
@@ -143,7 +144,21 @@ class ToyCategoryBreakdownScreen extends ConsumerWidget {
                                 ),
                                 total: total,
                                 formatAmount: fmt,
-                                onTap: null,
+                                // "Other" rolls up every category beyond
+                                // the top five into one slice, so a plain
+                                // ?category= can't represent it -- pass
+                                // every rolled-up name through instead
+                                // (CategoryFilter.anyOf), so tapping it
+                                // actually shows those expenses rather
+                                // than being a dead end. See
+                                // ExpenseCategoryStats.encodeCategoryNames'
+                                // doc comment for why this isn't a plain
+                                // comma-join.
+                                onTap: () => context.push(
+                                  '/expenses?categories=${Uri.encodeComponent(
+                                    CategoryFilter.encodeCategoryNames(restNames),
+                                  )}',
+                                ),
                               ),
                             ],
                             if (uncategorised != null) ...[

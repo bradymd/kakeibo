@@ -16,13 +16,47 @@ sealed class CategoryFilter {
   static const uncategorised = _Uncategorised();
   factory CategoryFilter.named(String category) = _NamedCategory;
 
+  /// Matches any of several named categories at once -- used for the
+  /// breakdown screen's "Other" bucket (categories beyond the top five
+  /// shown as individual slices), so tapping it can actually show which
+  /// expenses it's made of instead of being a dead end.
+  factory CategoryFilter.anyOf(Set<String> categories) = _AnyOfCategories;
+
+  /// Joins/splits multiple category names for the `categories` query param.
+  /// Not a plain comma: category names are free text and can contain
+  /// commas themselves, and go_router's queryParameters fully URI-decodes
+  /// the value before this class ever sees it -- so a comma that was part
+  /// of a name and a comma used as the separator become indistinguishable
+  /// by the time this runs, no matter how the individual names were
+  /// percent-encoded beforehand. U+241D is a control-picture symbol with
+  /// no normal keyboard input, effectively never appearing in a real
+  /// category name, so it survives as an unambiguous separator instead.
+  static const _multiCategorySeparator = '␝';
+
+  /// Builds the `/expenses?categories=...` query value for [names] -- the
+  /// counterpart to fromQueryParameters' anyOf parsing. Callers should
+  /// still wrap the result in Uri.encodeComponent when building the full
+  /// URL (this only joins; it doesn't escape).
+  static String encodeCategoryNames(Iterable<String> names) =>
+      names.join(_multiCategorySeparator);
+
   /// Parses the `/expenses` route's query params into a filter, or null for
   /// "no filter" (the Spend screen's default). `uncategorised=1` takes
-  /// precedence over `category` if a caller ever sent both. Pulled out as
-  /// its own testable function rather than left inline in the route
-  /// builder, since GoRouter route builders aren't directly unit-testable.
+  /// precedence over everything else if a caller ever sent it alongside
+  /// other params; `categories` (for the "Other" bucket) takes precedence
+  /// over a single `category`. Pulled out as its own testable function
+  /// rather than left inline in the route builder, since GoRouter route
+  /// builders aren't directly unit-testable.
   static CategoryFilter? fromQueryParameters(Map<String, String> params) {
     if (params['uncategorised'] == '1') return uncategorised;
+    final categories = params['categories'];
+    if (categories != null && categories.isNotEmpty) {
+      final names = categories
+          .split(_multiCategorySeparator)
+          .where((c) => c.isNotEmpty)
+          .toSet();
+      if (names.isNotEmpty) return CategoryFilter.anyOf(names);
+    }
     final category = params['category'];
     if (category != null && category.isNotEmpty) return CategoryFilter.named(category);
     return null;
@@ -60,6 +94,16 @@ class _NamedCategory extends CategoryFilter {
   bool matches(KakeiboExpense expense) => expense.category == name;
   @override
   String get pillLabel => 'Category: $name';
+}
+
+class _AnyOfCategories extends CategoryFilter {
+  const _AnyOfCategories(this.categories);
+  final Set<String> categories;
+  @override
+  bool matches(KakeiboExpense expense) => categories.contains(expense.category);
+  @override
+  String get pillLabel =>
+      'Category: Other (${categories.length} ${categories.length == 1 ? 'category' : 'categories'})';
 }
 
 /// One category's aggregated total within a set of expenses, used by both

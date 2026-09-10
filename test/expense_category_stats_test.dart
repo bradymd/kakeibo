@@ -144,6 +144,50 @@ void main() {
     test('all.pillLabel throws -- it should never be shown as an applied filter', () {
       expect(() => CategoryFilter.all.pillLabel, throwsStateError);
     });
+
+    test('anyOf matches any of several named categories, not others', () {
+      final filter = CategoryFilter.anyOf({'Groceries', 'Dining'});
+      expect(filter.matches(named), isTrue);
+      expect(filter.matches(other), isTrue);
+      expect(filter.matches(_exp(1, category: 'Transport')), isFalse);
+      expect(filter.matches(uncategorised), isFalse);
+    });
+
+    test('anyOf.pillLabel reads "Category: Other (N categories)"', () {
+      expect(
+        CategoryFilter.anyOf({'A', 'B', 'C'}).pillLabel,
+        'Category: Other (3 categories)',
+      );
+      expect(
+        CategoryFilter.anyOf({'A'}).pillLabel,
+        'Category: Other (1 category)',
+      );
+    });
+  });
+
+  group('CategoryFilter.encodeCategoryNames round-trip', () {
+    test('plain names survive encode -> route -> decode unchanged', () {
+      final names = {'Groceries', 'Dining', 'Transport'};
+      final encoded = Uri.encodeComponent(CategoryFilter.encodeCategoryNames(names));
+      final uri = Uri.parse('/expenses?categories=$encoded');
+      final filter = CategoryFilter.fromQueryParameters(uri.queryParameters);
+      expect(filter, isA<CategoryFilter>());
+      for (final name in names) {
+        expect(filter!.matches(_exp(1, category: name)), isTrue);
+      }
+    });
+
+    test('a category name containing a comma survives intact', () {
+      // The exact bug a plain comma-join would reintroduce: category names
+      // are free text and can contain commas themselves.
+      final names = {'Coffee, Tea', 'Dining'};
+      final encoded = Uri.encodeComponent(CategoryFilter.encodeCategoryNames(names));
+      final uri = Uri.parse('/expenses?categories=$encoded');
+      final filter = CategoryFilter.fromQueryParameters(uri.queryParameters);
+      expect(filter!.matches(_exp(1, category: 'Coffee, Tea')), isTrue);
+      expect(filter.matches(_exp(1, category: 'Coffee')), isFalse);
+      expect(filter.matches(_exp(1, category: ' Tea')), isFalse);
+    });
   });
 
   group('CategoryFilter.fromQueryParameters', () {
@@ -182,6 +226,38 @@ void main() {
     test('uncategorised=0 or any other value is not treated as the flag', () {
       expect(CategoryFilter.fromQueryParameters({'uncategorised': '0'}), isNull);
       expect(CategoryFilter.fromQueryParameters({'uncategorised': 'true'}), isNull);
+    });
+
+    test('categories=X<sep>Y -> anyOf({X, Y}), for the "Other" bucket', () {
+      final encoded = CategoryFilter.encodeCategoryNames({'Books', 'Games'});
+      final filter = CategoryFilter.fromQueryParameters({'categories': encoded});
+      expect(filter!.matches(_exp(1, category: 'Books')), isTrue);
+      expect(filter.matches(_exp(1, category: 'Games')), isTrue);
+      expect(filter.matches(_exp(1, category: 'Groceries')), isFalse);
+    });
+
+    test('categories takes precedence over a single category param', () {
+      final encoded = CategoryFilter.encodeCategoryNames({'Books'});
+      final filter = CategoryFilter.fromQueryParameters({
+        'categories': encoded,
+        'category': 'Groceries',
+      });
+      expect(filter!.matches(_exp(1, category: 'Books')), isTrue);
+      expect(filter.matches(_exp(1, category: 'Groceries')), isFalse);
+    });
+
+    test('uncategorised=1 takes precedence over categories too', () {
+      final encoded = CategoryFilter.encodeCategoryNames({'Books'});
+      final filter = CategoryFilter.fromQueryParameters({
+        'uncategorised': '1',
+        'categories': encoded,
+      });
+      expect(filter!.matches(_exp(1)), isTrue);
+      expect(filter.matches(_exp(1, category: 'Books')), isFalse);
+    });
+
+    test('categories= (empty string) -> no filter', () {
+      expect(CategoryFilter.fromQueryParameters({'categories': ''}), isNull);
     });
   });
 }
