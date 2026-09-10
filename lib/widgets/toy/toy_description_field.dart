@@ -8,8 +8,7 @@ import 'package:kakeibo/theme/toy/toy_theme.dart';
 ///
 /// Rebuilt after the original inline-ghost-text version (a Stack: a
 /// RichText behind a transparent TextField, meant to show the completion
-/// after the cursor like a search bar) proved fundamentally unreliable --
-/// see /tmp/kakeibo-discussion.txt for the full history. In short:
+/// after the cursor like a search bar) proved fundamentally unreliable.
 /// RichText and TextField/RenderEditable cannot be relied on to produce
 /// identical glyph geometry (different paragraph, padding, scroll offset,
 /// cursor layout), which is what caused the reported overlapping

@@ -9,10 +9,10 @@ import 'package:kakeibo/models/pillar.dart';
 import 'package:kakeibo/providers/kakeibo_provider.dart';
 import 'package:kakeibo/screens/toy_all_expenses_screen.dart';
 
-/// Regression test for the swipe-to-delete "yellow text on dark red" bug
-/// diagnosed by Codex in /tmp/kakeibo-discussion.txt: Dismissible requires
-/// the dismissed widget gone from the tree by the time onDismissed
-/// returns, but deleteExpense awaits a db write before invalidating the
+/// Regression test for the swipe-to-delete "yellow text on dark red" bug:
+/// Dismissible requires the dismissed widget gone from the tree by the
+/// time onDismissed returns, but deleteExpense awaits a db write before
+/// invalidating the
 /// provider supplying the list -- so a slow delete left the row's key
 /// still present, tripping Flutter's own "still part of the tree"
 /// assertion and painting its debug ErrorWidget for however long the

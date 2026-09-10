@@ -98,4 +98,90 @@ void main() {
       expect(ExpenseCategoryStats.distinctCategoryCount(expenses), 2);
     });
   });
+
+  group('CategoryFilter', () {
+    final named = _exp(1, category: 'Groceries');
+    final other = _exp(1, category: 'Dining');
+    final uncategorised = _exp(1);
+
+    test('all matches everything, including uncategorised', () {
+      expect(CategoryFilter.all.matches(named), isTrue);
+      expect(CategoryFilter.all.matches(uncategorised), isTrue);
+    });
+
+    test('uncategorised matches only empty-category expenses', () {
+      expect(CategoryFilter.uncategorised.matches(uncategorised), isTrue);
+      expect(CategoryFilter.uncategorised.matches(named), isFalse);
+    });
+
+    test('named matches only that exact category', () {
+      final filter = CategoryFilter.named('Groceries');
+      expect(filter.matches(named), isTrue);
+      expect(filter.matches(other), isFalse);
+      expect(filter.matches(uncategorised), isFalse);
+    });
+
+    test('named does not match uncategorised even for an empty-string name', () {
+      // Guards the exact bug this type replaced: a category filter must
+      // never accidentally match "no category" unless it's the dedicated
+      // .uncategorised state.
+      final filter = CategoryFilter.named('');
+      expect(filter.matches(uncategorised), isTrue); // '' == '' is correct here
+      // ...but this is why .named('') should never be constructed from a
+      // route in practice -- app.dart only builds .named(x) when x is
+      // non-empty, falling back to null (no filter) otherwise. Documented
+      // via this test rather than left implicit.
+    });
+
+    test('uncategorised.pillLabel reads "Category: Uncategorised"', () {
+      expect(CategoryFilter.uncategorised.pillLabel, 'Category: Uncategorised');
+    });
+
+    test('named(x).pillLabel reads "Category: x"', () {
+      expect(CategoryFilter.named('Groceries').pillLabel, 'Category: Groceries');
+    });
+
+    test('all.pillLabel throws -- it should never be shown as an applied filter', () {
+      expect(() => CategoryFilter.all.pillLabel, throwsStateError);
+    });
+  });
+
+  group('CategoryFilter.fromQueryParameters', () {
+    test('no params -> no filter', () {
+      expect(CategoryFilter.fromQueryParameters({}), isNull);
+    });
+
+    test('category=X -> named(X)', () {
+      final filter = CategoryFilter.fromQueryParameters({'category': 'Groceries'});
+      expect(filter, isA<CategoryFilter>());
+      expect(filter!.matches(_exp(1, category: 'Groceries')), isTrue);
+      expect(filter.matches(_exp(1, category: 'Dining')), isFalse);
+    });
+
+    test('category= (empty string) -> no filter, not an accidental uncategorised match', () {
+      // The route-level guard against the exact ambiguity CategoryFilter
+      // was introduced to fix: an empty category query param must not
+      // silently become "filter to uncategorised".
+      expect(CategoryFilter.fromQueryParameters({'category': ''}), isNull);
+    });
+
+    test('uncategorised=1 -> uncategorised, regardless of category', () {
+      final filter = CategoryFilter.fromQueryParameters({'uncategorised': '1'});
+      expect(filter!.matches(_exp(1)), isTrue);
+      expect(filter.matches(_exp(1, category: 'Groceries')), isFalse);
+    });
+
+    test('uncategorised=1 takes precedence over a category param sent alongside it', () {
+      final filter = CategoryFilter.fromQueryParameters({
+        'uncategorised': '1',
+        'category': 'Groceries',
+      });
+      expect(filter!.matches(_exp(1)), isTrue);
+    });
+
+    test('uncategorised=0 or any other value is not treated as the flag', () {
+      expect(CategoryFilter.fromQueryParameters({'uncategorised': '0'}), isNull);
+      expect(CategoryFilter.fromQueryParameters({'uncategorised': 'true'}), isNull);
+    });
+  });
 }

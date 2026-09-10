@@ -20,17 +20,18 @@ import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 /// `recentExpensesProvider` (which caps at 5) since this screen shows
 /// every expense in the month.
 class ToyAllExpensesScreen extends ConsumerStatefulWidget {
-  const ToyAllExpensesScreen({super.key, this.initialPillar, this.initialCategory});
+  const ToyAllExpensesScreen({super.key, this.initialPillar, this.initialCategoryFilter});
 
   /// Pillar to pre-filter to, e.g. when arriving from a tapped capsule
   /// on the dashboard. Null shows all pillars (the default).
   final Pillar? initialPillar;
 
-  /// Category to pre-filter to, e.g. when arriving from the category
-  /// breakdown screen. Null/empty shows all categories (the default).
-  /// Shown back to the user as a dismissible applied-filter pill rather
-  /// than a second filter carousel (per Codex's recommendation).
-  final String? initialCategory;
+  /// Category filter to pre-apply, e.g. when arriving from the category
+  /// breakdown screen (either a named category or "uncategorised"). Null
+  /// shows all categories (the default). Shown back to the user as a
+  /// dismissible applied-filter pill rather than a second filter carousel
+  /// (per Codex's recommendation).
+  final CategoryFilter? initialCategoryFilter;
 
   @override
   ConsumerState<ToyAllExpensesScreen> createState() => _ToyAllExpensesScreenState();
@@ -38,7 +39,7 @@ class ToyAllExpensesScreen extends ConsumerStatefulWidget {
 
 class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
   Pillar? _filterPillar;
-  String? _filterCategory;
+  CategoryFilter? _filterCategory;
 
   /// IDs whose Dismissible has already finished its dismiss animation but
   /// whose delete is still in flight (deleteExpense awaits a db write
@@ -47,20 +48,14 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
   /// Dismissible never rebuilds with the same key still present -- doing
   /// that violates its contract ("A dismissed Dismissible widget is still
   /// part of the tree") and Flutter paints its debug ErrorWidget (small
-  /// yellow text on dark red) for however long the delete takes. Root
-  /// cause + fix per Codex's review in /tmp/kakeibo-discussion.txt.
+  /// yellow text on dark red) for however long the delete takes.
   final _pendingDeletionIds = <String>{};
 
   @override
   void initState() {
     super.initState();
     _filterPillar = widget.initialPillar;
-    // Uncategorised uses a distinct sentinel (see kUncategorisedFilterValue)
-    // rather than empty string, so it can't collapse into "no filter" —
-    // real expense categories are never empty (that's how uncategorised
-    // is stored on the row itself), so a plain isNotEmpty check here could
-    // never tell "filter to uncategorised" apart from "no filter at all".
-    _filterCategory = widget.initialCategory?.isNotEmpty == true ? widget.initialCategory : null;
+    _filterCategory = widget.initialCategoryFilter;
   }
 
   @override
@@ -103,10 +98,9 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
         // reflects the pillar-filtered set, not a further-narrowed one.
         final categoryEligible = expenses;
 
-        if (_filterCategory == kUncategorisedFilterValue) {
-          expenses = expenses.where((e) => e.category.isEmpty).toList();
-        } else if (_filterCategory != null) {
-          expenses = expenses.where((e) => e.category == _filterCategory).toList();
+        final filterCategory = _filterCategory;
+        if (filterCategory != null) {
+          expenses = expenses.where(filterCategory.matches).toList();
         }
 
         final showCategorySummary = _filterCategory == null &&
@@ -157,9 +151,7 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: _AppliedFilterPill(
-                        label: _filterCategory == kUncategorisedFilterValue
-                            ? 'Category: Uncategorised'
-                            : 'Category: $_filterCategory',
+                        label: _filterCategory!.pillLabel,
                         onClear: () => setState(() => _filterCategory = null),
                       ),
                     ),

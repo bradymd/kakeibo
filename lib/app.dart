@@ -22,6 +22,7 @@ import 'package:kakeibo/screens/toy_search_screen.dart';
 import 'package:kakeibo/screens/toy_settings_screen.dart';
 import 'package:kakeibo/screens/toy_setup_screen.dart';
 import 'package:kakeibo/services/auto_backup_manager.dart';
+import 'package:kakeibo/services/expense_category_stats.dart';
 import 'package:kakeibo/services/swipe_nav.dart';
 import 'package:kakeibo/theme/app_theme.dart';
 
@@ -45,11 +46,13 @@ final _router = GoRouter(
         final pillar = pillarName == null
             ? null
             : Pillar.values.where((p) => p.name == pillarName).firstOrNull;
+        final initialCategoryFilter =
+            CategoryFilter.fromQueryParameters(state.uri.queryParameters);
         return SwipeNav.slidePage(
           state: state,
           child: ToyAllExpensesScreen(
             initialPillar: pillar,
-            initialCategory: state.uri.queryParameters['category'],
+            initialCategoryFilter: initialCategoryFilter,
           ),
         );
       },

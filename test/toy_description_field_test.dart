@@ -4,11 +4,11 @@ import 'package:kakeibo/database/database_provider.dart' show DescriptionMatch;
 import 'package:kakeibo/widgets/toy/toy_description_field.dart';
 
 /// Widget-level tests for the description-autocomplete rebuild (separate
-/// suggestion row, not inline ghost text) per Codex's post-mortem in
-/// /tmp/kakeibo-discussion.txt. Uses a fake findMatch rather than a real
-/// database, and a bare MaterialApp rather than the full toy theme/screen,
-/// so this stays independent of both the database layer and the rest of
-/// Add Expense.
+/// suggestion row, not inline ghost text -- see toy_description_field.dart's
+/// own doc comment for why the original inline approach was replaced). Uses
+/// a fake findMatch rather than a real database, and a bare MaterialApp
+/// rather than the full toy theme/screen, so this stays independent of both
+/// the database layer and the rest of Add Expense.
 void main() {
   Widget wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
 

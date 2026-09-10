@@ -25,8 +25,7 @@ class SwipeNav {
   /// hand-wired its own left/right targets and the four disagreed with
   /// each other — Month skipped over Spend when swiping one direction,
   /// Spend used the opposite velocity-to-direction convention from Month,
-  /// and Fixed/Income had no swipe handling at all. See the app owner's
-  /// report in /tmp/kakeibo-discussion.txt.
+  /// and Fixed/Income had no swipe handling at all.
   ///
   /// Convention (matches the app owner's own description): dragging left
   /// -to-right (positive [velocity]) advances forward through the tab

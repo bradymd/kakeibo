@@ -1,13 +1,66 @@
 import 'package:kakeibo/models/kakeibo_month.dart';
 
-/// Sentinel used on the `/expenses?category=` query param and by
-/// [ToyAllExpensesScreen]'s filter state to mean "uncategorised only",
-/// distinct from both "no filter" (absent/null) and any real category name
-/// (which is never empty -- empty string IS how uncategorised is stored,
-/// so a plain empty-string check can't tell "filter to uncategorised" apart
-/// from "no filter" -- see the fix noted in /tmp/kakeibo-discussion.txt,
-/// Codex's implementation-review finding #2).
-const kUncategorisedFilterValue = '—uncategorised—';
+/// The Spend screen's category filter, as a proper tri-state rather than a
+/// bare `String?` -- a nullable string can't distinguish "no filter" from
+/// "filter to uncategorised" when uncategorised expenses are *themselves*
+/// stored as an empty-string category. An earlier fix tried to paper over
+/// that with a reserved sentinel string, but a sentinel still lives in the
+/// same value domain as real (free-text) category names, so it could in
+/// principle collide with something a user actually types. This type makes
+/// "no filter" / "a named category" / "uncategorised" three distinct,
+/// unconfusable states instead.
+sealed class CategoryFilter {
+  const CategoryFilter();
+
+  static const all = _AllCategories();
+  static const uncategorised = _Uncategorised();
+  factory CategoryFilter.named(String category) = _NamedCategory;
+
+  /// Parses the `/expenses` route's query params into a filter, or null for
+  /// "no filter" (the Spend screen's default). `uncategorised=1` takes
+  /// precedence over `category` if a caller ever sent both. Pulled out as
+  /// its own testable function rather than left inline in the route
+  /// builder, since GoRouter route builders aren't directly unit-testable.
+  static CategoryFilter? fromQueryParameters(Map<String, String> params) {
+    if (params['uncategorised'] == '1') return uncategorised;
+    final category = params['category'];
+    if (category != null && category.isNotEmpty) return CategoryFilter.named(category);
+    return null;
+  }
+
+  /// Whether [expense]'s category matches this filter.
+  bool matches(KakeiboExpense expense);
+
+  /// Display label for the applied-filter pill, e.g. "Category: Groceries"
+  /// or "Category: Uncategorised". Not defined for [all], since that state
+  /// never shows a pill.
+  String get pillLabel;
+}
+
+class _AllCategories extends CategoryFilter {
+  const _AllCategories();
+  @override
+  bool matches(KakeiboExpense expense) => true;
+  @override
+  String get pillLabel => throw StateError('CategoryFilter.all has no pill label');
+}
+
+class _Uncategorised extends CategoryFilter {
+  const _Uncategorised();
+  @override
+  bool matches(KakeiboExpense expense) => expense.category.isEmpty;
+  @override
+  String get pillLabel => 'Category: Uncategorised';
+}
+
+class _NamedCategory extends CategoryFilter {
+  const _NamedCategory(this.name);
+  final String name;
+  @override
+  bool matches(KakeiboExpense expense) => expense.category == name;
+  @override
+  String get pillLabel => 'Category: $name';
+}
 
 /// One category's aggregated total within a set of expenses, used by both
 /// the Spend summary card and the dedicated breakdown screen so the two
