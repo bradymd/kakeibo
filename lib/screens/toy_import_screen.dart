@@ -8,6 +8,7 @@ import 'package:kakeibo/models/import_type.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
 import 'package:kakeibo/services/import_duplicate_detector.dart';
 import 'package:kakeibo/services/month_helpers.dart';
+import 'package:kakeibo/services/toggle_deviation_set.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 
@@ -117,13 +118,26 @@ class _ToyImportScreenState extends ConsumerState<ToyImportScreen> {
                       .toList();
 
           // Checked = default (unchecked if flagged as a duplicate, checked
-          // otherwise) XOR whether the user has explicitly toggled it.
-          bool isChecked(String id, bool isDuplicate) =>
-              _toggled.contains(id) ? isDuplicate : !isDuplicate;
+          // otherwise) XOR whether the user has explicitly toggled it. See
+          // ToggleDeviationSet's own doc comment for why this needs to be
+          // relative to each item's default rather than a plain checked set.
+          bool isChecked(String id, bool isDuplicate) => ToggleDeviationSet.isChecked(
+                id: id,
+                defaultChecked: !isDuplicate,
+                toggled: _toggled,
+              );
+
+          final defaultCheckedItems =
+              items.map((i) => (i.$1, !i.$4)).toList();
 
           final selectedItems =
               items.where((i) => isChecked(i.$1, i.$4)).toList();
           final selectedTotal = selectedItems.fold(0.0, (sum, i) => sum + i.$3);
+          // Selected items that are also flagged duplicates -- i.e. the
+          // user has explicitly overridden the "already added" default.
+          // Surfaced on the button and gated behind a confirmation dialog
+          // rather than left as a silent checkbox tap, per Codex's review.
+          final selectedDuplicates = selectedItems.where((i) => i.$4).toList();
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(
@@ -171,22 +185,21 @@ class _ToyImportScreenState extends ConsumerState<ToyImportScreen> {
                   ),
                   GestureDetector(
                     onTap: () => setState(() {
-                      final allChecked = items.every((i) => isChecked(i.$1, i.$4));
-                      // Toggle every item that doesn't already match the
-                      // target state (all-checked or all-unchecked) --
-                      // "checked" here is relative to each item's own
-                      // computed default, not a plain select-all/none.
-                      for (final i in items) {
-                        final shouldBeChecked = !allChecked;
-                        if (isChecked(i.$1, i.$4) != shouldBeChecked) {
-                          _toggled.add(i.$1);
-                        } else {
-                          _toggled.remove(i.$1);
-                        }
-                      }
+                      final allChecked = ToggleDeviationSet.allChecked(
+                        toggled: _toggled,
+                        items: defaultCheckedItems,
+                      );
+                      _toggled
+                        ..clear()
+                        ..addAll(ToggleDeviationSet.applyBulkTarget(
+                          targetChecked: !allChecked,
+                          items: defaultCheckedItems,
+                        ));
                     }),
                     child: Text(
-                      items.every((i) => isChecked(i.$1, i.$4)) ? 'Deselect all' : 'Select all',
+                      ToggleDeviationSet.allChecked(toggled: _toggled, items: defaultCheckedItems)
+                          ? 'Deselect all'
+                          : 'Select all',
                       style: ToyTextStyles.label(fontSize: 11.5, fontWeight: FontWeight.w800, color: ToyColors.brand),
                     ),
                   ),
@@ -232,10 +245,53 @@ class _ToyImportScreenState extends ConsumerState<ToyImportScreen> {
               ToyPrimaryButton(
                 label: selectedItems.isEmpty
                     ? 'Select items to copy'
-                    : 'Copy ${selectedItems.length} ${selectedItems.length == 1 ? 'item' : 'items'} ・ ${fmt(selectedTotal)}',
+                    : selectedDuplicates.isEmpty
+                        ? 'Copy ${selectedItems.length} ${selectedItems.length == 1 ? 'item' : 'items'} ・ ${fmt(selectedTotal)}'
+                        : 'Copy ${selectedItems.length} ${selectedItems.length == 1 ? 'item' : 'items'} ・ '
+                            'includes ${selectedDuplicates.length} ${selectedDuplicates.length == 1 ? 'duplicate' : 'duplicates'}',
                 onTap: selectedItems.isEmpty || selectedMonth == null
                     ? null
                     : () async {
+                        // Re-read the destination fresh at submit time,
+                        // not the build-time snapshot -- if an earlier
+                        // copy from this same screen (or elsewhere) landed
+                        // while this screen was open, a row that looked
+                        // fine when the screen first built could be a
+                        // duplicate by the time Copy is actually pressed.
+                        final freshMonths = ref.read(kakeiboMonthsProvider).valueOrNull;
+                        final freshDestination =
+                            freshMonths?.where((m) => m.id == currentMonthId).firstOrNull;
+                        final freshDuplicateIds = freshDestination == null
+                            ? const <String>{}
+                            : isFixedCosts
+                                ? ImportDuplicateDetector.alreadyPresentFixedExpenseIds(
+                                    candidates: selectedMonth.fixedExpenses,
+                                    existingFixedExpenses: freshDestination.fixedExpenses,
+                                  )
+                                : ImportDuplicateDetector.alreadyPresentIncomeSourceIds(
+                                    candidates: selectedMonth.incomeSources,
+                                    existingIncomeSources: freshDestination.incomeSources,
+                                  );
+
+                        final aboutToDuplicate = isFixedCosts
+                            ? selectedMonth.fixedExpenses
+                                .where((e) =>
+                                    isChecked(e.id, alreadyPresentIds.contains(e.id)) &&
+                                    freshDuplicateIds.contains(e.id))
+                                .map((e) => e.name.isNotEmpty ? e.name : e.category)
+                                .toList()
+                            : selectedMonth.incomeSources
+                                .where((s) =>
+                                    isChecked(s.id, alreadyPresentIds.contains(s.id)) &&
+                                    freshDuplicateIds.contains(s.id))
+                                .map((s) => s.name)
+                                .toList();
+
+                        if (aboutToDuplicate.isNotEmpty) {
+                          final confirmed = await _confirmDuplicateCopy(context, aboutToDuplicate);
+                          if (!confirmed) return;
+                        }
+
                         final notifier = ref.read(kakeiboMonthsProvider.notifier);
                         if (isFixedCosts) {
                           for (final e in selectedMonth.fixedExpenses) {
@@ -267,6 +323,43 @@ class _ToyImportScreenState extends ConsumerState<ToyImportScreen> {
       ),
     );
   }
+}
+
+/// Confirmation dialog shown when the user is about to copy one or more
+/// items that (per a fresh re-check against the destination month, not
+/// just the snapshot the screen built with) already exist there. Cancel is
+/// the safe default -- per Codex's review, an additive operation that can
+/// silently distort totals deserves a second, plain-language boundary
+/// beyond just an unchecked-by-default checkbox.
+Future<bool> _confirmDuplicateCopy(BuildContext context, List<String> names) async {
+  const maxNamed = 3;
+  final named = names.take(maxNamed).join(', ');
+  final remaining = names.length - maxNamed;
+  final body = names.length == 1
+      ? '${names.first} already exists in this month. Copy it again?'
+      : remaining > 0
+          ? '$named and $remaining more already exist in this month. Copy them again?'
+          : '$named already exist in this month. Copy them again?';
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Copy duplicates?'),
+      content: Text(body),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: TextButton.styleFrom(foregroundColor: ToyColors.amberInk),
+          child: const Text('Copy anyway'),
+        ),
+      ],
+    ),
+  );
+  return confirmed ?? false;
 }
 
 class _MonthCard extends StatelessWidget {
@@ -334,9 +427,14 @@ class _ItemRow extends StatelessWidget {
   final bool checked;
 
   /// Whether this item looks like it already exists in the destination
-  /// month (see ImportDuplicateDetector) -- shown as a small caption, not
-  /// a hard block: the checkbox still works normally, this just explains
-  /// why it started out unchecked.
+  /// month (see ImportDuplicateDetector). Rendered as a conspicuous amber
+  /// badge, not a small muted caption -- per Codex's review, an 11px grey
+  /// line of prose had already failed as a safety affordance once (an
+  /// owner selected and copied a flagged duplicate without registering
+  /// the warning). The checkbox still works normally; explicitly checking
+  /// a flagged item is still allowed (Codex: don't hard-block a legitimate
+  /// intentional duplicate), but the badge's label switches to make that
+  /// consequence explicit rather than letting the row look ordinary.
   final bool alreadyPresent;
   final ValueChanged<bool> onChanged;
 
@@ -373,11 +471,10 @@ class _ItemRow extends StatelessWidget {
                       color: checked ? ToyColors.ink : ToyColors.placeholder,
                     ),
                   ),
-                  if (alreadyPresent)
-                    Text(
-                      'Already in this month',
-                      style: ToyTextStyles.label(fontSize: 11, color: ToyColors.muted2),
-                    ),
+                  if (alreadyPresent) ...[
+                    const SizedBox(height: 3),
+                    _AlreadyPresentBadge(willAdd: checked),
+                  ],
                 ],
               ),
             ),
@@ -390,6 +487,47 @@ class _ItemRow extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The visible warning shown on a row ImportDuplicateDetector has flagged.
+/// `willAdd: false` (the default, unchecked state) reads "Already added";
+/// `willAdd: true` (the user has explicitly re-checked it) switches to
+/// "Will add duplicate" so the consequence of the override stays visible
+/// rather than the row quietly reverting to looking like a normal item.
+class _AlreadyPresentBadge extends StatelessWidget {
+  const _AlreadyPresentBadge({required this.willAdd});
+
+  final bool willAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: ToyColors.amberBg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            willAdd ? Icons.warning_amber_rounded : Icons.info_outline_rounded,
+            size: 12,
+            color: ToyColors.amberInk,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            willAdd ? 'Will add duplicate' : 'Already added',
+            style: ToyTextStyles.label(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: ToyColors.amberInk,
+            ),
+          ),
+        ],
       ),
     );
   }

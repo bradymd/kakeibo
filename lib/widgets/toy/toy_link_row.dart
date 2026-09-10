@@ -21,24 +21,32 @@ class ToyLinkRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: ToyTextStyles.label(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: ToyColors.brand,
+      child: ConstrainedBox(
+        // The visible text+icon is small by design (this is a quiet link,
+        // not a button), but the tappable surface still needs to meet the
+        // accessibility minimum -- flagged in review since the padded
+        // InkWell alone came out to ~33px, short of ToyMetrics.minTapTarget.
+        constraints: const BoxConstraints(minHeight: ToyMetrics.minTapTarget),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  label,
+                  style: ToyTextStyles.label(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: ToyColors.brand,
+                  ),
                 ),
-              ),
-              const Icon(Icons.chevron_right_rounded, size: 17, color: ToyColors.brand),
-            ],
+                const Icon(Icons.chevron_right_rounded, size: 17, color: ToyColors.brand),
+              ],
+            ),
           ),
         ),
       ),

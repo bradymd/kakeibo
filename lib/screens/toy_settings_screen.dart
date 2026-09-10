@@ -281,8 +281,8 @@ class _ToySettingsScreenState extends ConsumerState<ToySettingsScreen> {
                 ),
                 const DashedDivider(),
                 ToySettingsRow(
-                  label: 'Import fixed costs',
-                  value: 'From a past month',
+                  label: 'Copy fixed costs',
+                  value: 'From another month',
                   onTap: () => context.push('/import-fixed-costs'),
                 ),
                 const DashedDivider(),

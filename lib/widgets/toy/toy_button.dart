@@ -52,8 +52,13 @@ class ToyPrimaryButton extends StatelessWidget {
   }
 }
 
-/// Small chunky "gold capsule" button — used for secondary actions like
-/// `先月からコピー ・ Import last month` (README §4d). Radius 20, padding
+/// Small chunky "gold capsule" button — used for the copy-from-another-
+/// -month action in Fixed Costs/Income's empty state (`別の月からコピー
+/// ・ Copy from another month`), where copying is the likely next step.
+/// Once the month already has entries, the same action demotes to a quiet
+/// ToyLinkRow instead -- gold is the design system's action colour, and a
+/// month with real data shouldn't have "copy old data" outrank it visually
+/// (see the design discussion for the full reasoning). Radius 20, padding
 /// `8 14`, shadow `0 4px 0 #D9A400`.
 class ToyCapsuleButton extends StatelessWidget {
   const ToyCapsuleButton({

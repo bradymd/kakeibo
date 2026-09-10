@@ -83,7 +83,7 @@ class ToyIncomeScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: ToyMetrics.cardGap),
                             ToyCapsuleButton(
-                              label: '先月からコピー ・ Copy from another month',
+                              label: '別の月からコピー ・ Copy from another month',
                               onTap: () => context.push('/import-income'),
                             ),
                           ],
