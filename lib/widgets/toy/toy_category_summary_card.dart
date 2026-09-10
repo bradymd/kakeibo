@@ -47,10 +47,7 @@ class ToyCategorySummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final named = stats.where((s) => s.name.isNotEmpty).toList();
     final total = stats.fold(0.0, (sum, s) => sum + s.total);
-    final topThree = named.take(3).toList();
-    final remaining = named.length - topThree.length;
 
     return GestureDetector(
       onTap: onTap,
@@ -100,24 +97,6 @@ class ToyCategorySummaryCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             _StackedBar(stats: stats, total: total),
-            if (topThree.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 4,
-                children: [
-                  for (var i = 0; i < topThree.length; i++)
-                    Text(
-                      '${i > 0 ? ' • ' : ''}${topThree[i].name} ${formatAmount(topThree[i].total)}',
-                      style: ToyTextStyles.label(fontSize: 11.5, color: ToyColors.muted),
-                    ),
-                  if (remaining > 0)
-                    Text(
-                      ' • $remaining more',
-                      style: ToyTextStyles.label(fontSize: 11.5, color: ToyColors.muted2),
-                    ),
-                ],
-              ),
-            ],
           ],
         ),
       ),

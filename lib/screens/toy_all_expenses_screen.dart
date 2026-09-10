@@ -55,6 +55,11 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
   void initState() {
     super.initState();
     _filterPillar = widget.initialPillar;
+    // Uncategorised uses a distinct sentinel (see kUncategorisedFilterValue)
+    // rather than empty string, so it can't collapse into "no filter" —
+    // real expense categories are never empty (that's how uncategorised
+    // is stored on the row itself), so a plain isNotEmpty check here could
+    // never tell "filter to uncategorised" apart from "no filter at all".
     _filterCategory = widget.initialCategory?.isNotEmpty == true ? widget.initialCategory : null;
   }
 
@@ -98,19 +103,18 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
         // reflects the pillar-filtered set, not a further-narrowed one.
         final categoryEligible = expenses;
 
-        if (_filterCategory != null) {
+        if (_filterCategory == kUncategorisedFilterValue) {
+          expenses = expenses.where((e) => e.category.isEmpty).toList();
+        } else if (_filterCategory != null) {
           expenses = expenses.where((e) => e.category == _filterCategory).toList();
         }
 
-        final filteredTotal = expenses.fold(0.0, (sum, e) => sum + e.amount);
         final showCategorySummary = _filterCategory == null &&
             ExpenseCategoryStats.meetsSummaryThreshold(categoryEligible);
 
         return ToyScaffold(
           title: '支出 Spent',
           subtitle: displayMonth,
-          headlineFigure:
-              '${fmt(filteredTotal)}   ${expenses.length} ${expenses.length == 1 ? 'entry' : 'entries'}',
           tab: ToyTabDestination.spend,
           trailing: const ToyMenuButton(),
           floatingActionButton: ToyFab(onTap: () => context.push('/add-expense')),
@@ -156,7 +160,9 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: _AppliedFilterPill(
-                        label: 'Category: $_filterCategory',
+                        label: _filterCategory == kUncategorisedFilterValue
+                            ? 'Category: Uncategorised'
+                            : 'Category: $_filterCategory',
                         onClear: () => setState(() => _filterCategory = null),
                       ),
                     ),

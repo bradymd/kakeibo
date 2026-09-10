@@ -154,7 +154,9 @@ class ToyCategoryBreakdownScreen extends ConsumerWidget {
                                 total: total,
                                 formatAmount: fmt,
                                 muted: true,
-                                onTap: () => context.push('/expenses'),
+                                onTap: () => context.push(
+                                  '/expenses?category=${Uri.encodeComponent(kUncategorisedFilterValue)}',
+                                ),
                               ),
                             ],
                           ],

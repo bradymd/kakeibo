@@ -1,5 +1,14 @@
 import 'package:kakeibo/models/kakeibo_month.dart';
 
+/// Sentinel used on the `/expenses?category=` query param and by
+/// [ToyAllExpensesScreen]'s filter state to mean "uncategorised only",
+/// distinct from both "no filter" (absent/null) and any real category name
+/// (which is never empty -- empty string IS how uncategorised is stored,
+/// so a plain empty-string check can't tell "filter to uncategorised" apart
+/// from "no filter" -- see the fix noted in /tmp/kakeibo-discussion.txt,
+/// Codex's implementation-review finding #2).
+const kUncategorisedFilterValue = '—uncategorised—';
+
 /// One category's aggregated total within a set of expenses, used by both
 /// the Spend summary card and the dedicated breakdown screen so the two
 /// stay consistent (per Codex's "shared aggregation model" suggestion).
