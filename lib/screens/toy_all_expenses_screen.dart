@@ -106,9 +106,15 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
         final showCategorySummary = _filterCategory == null &&
             ExpenseCategoryStats.meetsSummaryThreshold(categoryEligible);
 
+        // Running total for whatever's currently shown -- respects the
+        // pillar/category filter the same way the entry count already does,
+        // matching Fixed Costs' headlineFigure pattern.
+        final filteredTotal = expenses.fold(0.0, (sum, e) => sum + e.amount);
+
         return ToyScaffold(
           title: '支出 Spent',
           subtitle: '$displayMonth ・ ${expenses.length} ${expenses.length == 1 ? 'entry' : 'entries'}',
+          headlineFigure: fmt(filteredTotal),
           tab: ToyTabDestination.spend,
           trailing: const ToyMenuButton(),
           floatingActionButton: ToyFab(onTap: () => context.push('/add-expense')),
