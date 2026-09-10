@@ -69,19 +69,28 @@ class ToyIncomeScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ToyCapsuleButton(
-                    label: '先月からコピー ・ Import last month',
-                    onTap: () => context.push('/import-income'),
-                  ),
-                  const SizedBox(height: ToyMetrics.cardGap),
-                  if (sources.isEmpty)
+                  if (sources.isEmpty) ...[
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 24),
                       child: Center(
-                        child: Text('No income sources yet. Tap the button below to add one!', style: ToyTextStyles.body(), textAlign: TextAlign.center),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'No income sources yet.\nAdd one below, or bring forward a\nprevious month\'s setup.',
+                              style: ToyTextStyles.body(),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: ToyMetrics.cardGap),
+                            ToyCapsuleButton(
+                              label: '先月からコピー ・ Copy from another month',
+                              onTap: () => context.push('/import-income'),
+                            ),
+                          ],
+                        ),
                       ),
-                    )
-                  else
+                    ),
+                  ] else ...[
                     ToyCard(
                       child: Column(
                         children: [
@@ -99,6 +108,12 @@ class ToyIncomeScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
+                    const SizedBox(height: ToyMetrics.cardGap),
+                    ToyLinkRow(
+                      label: 'Copy from another month',
+                      onTap: () => context.push('/import-income'),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Text(
                     'Income feeds "Money to budget" on Start of Month.',

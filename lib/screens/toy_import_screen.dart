@@ -6,6 +6,7 @@ import 'package:kakeibo/providers/kakeibo_provider.dart';
 import 'package:kakeibo/providers/settings_provider.dart';
 import 'package:kakeibo/models/import_type.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
+import 'package:kakeibo/services/import_duplicate_detector.dart';
 import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
@@ -26,9 +27,16 @@ class ToyImportScreen extends ConsumerStatefulWidget {
 class _ToyImportScreenState extends ConsumerState<ToyImportScreen> {
   String? _selectedMonthId;
 
-  /// ids of items the user has deselected (checkbox unchecked). Empty
-  /// means "everything selected", matching the default select-all state.
-  final Set<String> _deselected = {};
+  /// ids the user has explicitly toggled away from their *computed*
+  /// default state. The default is: unchecked if the item looks like it
+  /// already exists in the destination month (see
+  /// ImportDuplicateDetector), checked otherwise. This is a set of
+  /// deviations from that default, not a plain "is it checked" flag --
+  /// re-checking a flagged duplicate is an explicit opt-in the user can
+  /// make (Codex: don't force recategorisation/exclusion, just default
+  /// away from the obvious repeat-copy trap), and it needs to be
+  /// distinguishable from a duplicate-looking item nobody has touched.
+  final Set<String> _toggled = {};
 
   @override
   Widget build(BuildContext context) {
@@ -75,16 +83,46 @@ class _ToyImportScreenState extends ConsumerState<ToyImportScreen> {
 
           _selectedMonthId ??= candidates.first.id;
           final selectedMonth = candidates.where((m) => m.id == _selectedMonthId).firstOrNull;
+          final destinationMonth = allMonths.where((m) => m.id == currentMonthId).firstOrNull;
+
+          // Items already present in the destination month, by the v1
+          // identity in ImportDuplicateDetector -- default these
+          // unchecked so re-running a copy doesn't silently duplicate
+          // them, while still letting the user explicitly opt back in.
+          final alreadyPresentIds = selectedMonth == null || destinationMonth == null
+              ? const <String>{}
+              : isFixedCosts
+                  ? ImportDuplicateDetector.alreadyPresentFixedExpenseIds(
+                      candidates: selectedMonth.fixedExpenses,
+                      existingFixedExpenses: destinationMonth.fixedExpenses,
+                    )
+                  : ImportDuplicateDetector.alreadyPresentIncomeSourceIds(
+                      candidates: selectedMonth.incomeSources,
+                      existingIncomeSources: destinationMonth.incomeSources,
+                    );
 
           final items = selectedMonth == null
-              ? const <(String, String, double)>[]
+              ? const <(String, String, double, bool)>[]
               : isFixedCosts
                   ? selectedMonth.fixedExpenses
-                      .map((e) => (e.id, e.name.isNotEmpty ? '${e.category} · ${e.name}' : e.category, e.amount))
+                      .map((e) => (
+                            e.id,
+                            e.name.isNotEmpty ? '${e.category} · ${e.name}' : e.category,
+                            e.amount,
+                            alreadyPresentIds.contains(e.id),
+                          ))
                       .toList()
-                  : selectedMonth.incomeSources.map((s) => (s.id, s.name, s.amount)).toList();
+                  : selectedMonth.incomeSources
+                      .map((s) => (s.id, s.name, s.amount, alreadyPresentIds.contains(s.id)))
+                      .toList();
 
-          final selectedItems = items.where((i) => !_deselected.contains(i.$1)).toList();
+          // Checked = default (unchecked if flagged as a duplicate, checked
+          // otherwise) XOR whether the user has explicitly toggled it.
+          bool isChecked(String id, bool isDuplicate) =>
+              _toggled.contains(id) ? isDuplicate : !isDuplicate;
+
+          final selectedItems =
+              items.where((i) => isChecked(i.$1, i.$4)).toList();
           final selectedTotal = selectedItems.fold(0.0, (sum, i) => sum + i.$3);
 
           return ListView(
@@ -115,7 +153,7 @@ class _ToyImportScreenState extends ConsumerState<ToyImportScreen> {
                         formatAmount: fmt,
                         onTap: () => setState(() {
                           _selectedMonthId = month.id;
-                          _deselected.clear();
+                          _toggled.clear();
                         }),
                       ),
                       const SizedBox(width: 10),
@@ -133,12 +171,22 @@ class _ToyImportScreenState extends ConsumerState<ToyImportScreen> {
                   ),
                   GestureDetector(
                     onTap: () => setState(() {
-                      _deselected.isEmpty
-                          ? _deselected.addAll(items.map((i) => i.$1))
-                          : _deselected.clear();
+                      final allChecked = items.every((i) => isChecked(i.$1, i.$4));
+                      // Toggle every item that doesn't already match the
+                      // target state (all-checked or all-unchecked) --
+                      // "checked" here is relative to each item's own
+                      // computed default, not a plain select-all/none.
+                      for (final i in items) {
+                        final shouldBeChecked = !allChecked;
+                        if (isChecked(i.$1, i.$4) != shouldBeChecked) {
+                          _toggled.add(i.$1);
+                        } else {
+                          _toggled.remove(i.$1);
+                        }
+                      }
                     }),
                     child: Text(
-                      _deselected.isEmpty ? 'Deselect all' : 'Select all',
+                      items.every((i) => isChecked(i.$1, i.$4)) ? 'Deselect all' : 'Select all',
                       style: ToyTextStyles.label(fontSize: 11.5, fontWeight: FontWeight.w800, color: ToyColors.brand),
                     ),
                   ),
@@ -154,12 +202,14 @@ class _ToyImportScreenState extends ConsumerState<ToyImportScreen> {
                       _ItemRow(
                         title: items[i].$2,
                         amountText: fmt(items[i].$3),
-                        checked: !_deselected.contains(items[i].$1),
+                        alreadyPresent: items[i].$4,
+                        checked: isChecked(items[i].$1, items[i].$4),
                         onChanged: (checked) => setState(() {
-                          if (checked) {
-                            _deselected.remove(items[i].$1);
+                          if (checked == isChecked(items[i].$1, items[i].$4)) return;
+                          if (_toggled.contains(items[i].$1)) {
+                            _toggled.remove(items[i].$1);
                           } else {
-                            _deselected.add(items[i].$1);
+                            _toggled.add(items[i].$1);
                           }
                         }),
                       ),
@@ -167,6 +217,17 @@ class _ToyImportScreenState extends ConsumerState<ToyImportScreen> {
                   ],
                 ),
               ),
+              if (destinationMonth != null &&
+                  (isFixedCosts
+                      ? destinationMonth.fixedExpenses.isNotEmpty
+                      : destinationMonth.incomeSources.isNotEmpty)) ...[
+                const SizedBox(height: 10),
+                Text(
+                  'Selected items will be added. Your existing entries will stay.',
+                  style: ToyTextStyles.label(fontSize: 11, color: ToyColors.muted2),
+                  textAlign: TextAlign.center,
+                ),
+              ],
               const SizedBox(height: ToyMetrics.cardGap),
               ToyPrimaryButton(
                 label: selectedItems.isEmpty
@@ -178,7 +239,7 @@ class _ToyImportScreenState extends ConsumerState<ToyImportScreen> {
                         final notifier = ref.read(kakeiboMonthsProvider.notifier);
                         if (isFixedCosts) {
                           for (final e in selectedMonth.fixedExpenses) {
-                            if (_deselected.contains(e.id)) continue;
+                            if (!isChecked(e.id, alreadyPresentIds.contains(e.id))) continue;
                             await notifier.addFixedExpense(
                               monthId: currentMonthId,
                               name: e.name,
@@ -189,7 +250,7 @@ class _ToyImportScreenState extends ConsumerState<ToyImportScreen> {
                           }
                         } else {
                           for (final s in selectedMonth.incomeSources) {
-                            if (_deselected.contains(s.id)) continue;
+                            if (!isChecked(s.id, alreadyPresentIds.contains(s.id))) continue;
                             await notifier.addIncomeSource(
                               monthId: currentMonthId,
                               name: s.name,
@@ -264,12 +325,19 @@ class _ItemRow extends StatelessWidget {
     required this.title,
     required this.amountText,
     required this.checked,
+    required this.alreadyPresent,
     required this.onChanged,
   });
 
   final String title;
   final String amountText;
   final bool checked;
+
+  /// Whether this item looks like it already exists in the destination
+  /// month (see ImportDuplicateDetector) -- shown as a small caption, not
+  /// a hard block: the checkbox still works normally, this just explains
+  /// why it started out unchecked.
+  final bool alreadyPresent;
   final ValueChanged<bool> onChanged;
 
   @override
@@ -295,12 +363,22 @@ class _ItemRow extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                title,
-                style: ToyTextStyles.rowTitle(
-                  fontSize: 13.5,
-                  color: checked ? ToyColors.ink : ToyColors.placeholder,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: ToyTextStyles.rowTitle(
+                      fontSize: 13.5,
+                      color: checked ? ToyColors.ink : ToyColors.placeholder,
+                    ),
+                  ),
+                  if (alreadyPresent)
+                    Text(
+                      'Already in this month',
+                      style: ToyTextStyles.label(fontSize: 11, color: ToyColors.muted2),
+                    ),
+                ],
               ),
             ),
             Text(

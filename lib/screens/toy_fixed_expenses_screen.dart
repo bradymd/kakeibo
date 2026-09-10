@@ -53,51 +53,71 @@ class ToyFixedExpensesScreen extends ConsumerWidget {
               details.primaryVelocity ?? 0,
             ),
             behavior: HitTestBehavior.translucent,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                ToyMetrics.screenPaddingH,
-                12,
-                ToyMetrics.screenPaddingH,
-                ToyMetrics.listBottomPadding,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ToyCapsuleButton(
-                    label: '先月からコピー ・ Import last month',
-                    onTap: () => context.push('/import-fixed-costs'),
-                  ),
-                  const SizedBox(height: ToyMetrics.cardGap),
-                  Expanded(
-                    child: items.isEmpty
-                        ? Center(
-                            child: Text(
-                              'No fixed costs yet. Tap ＋ to add one!',
-                              style: ToyTextStyles.body(),
-                            ),
-                          )
-                        : SingleChildScrollView(
-                            child: ToyCard(
-                              padding: EdgeInsets.zero,
-                              child: Column(
-                                children: [
-                                  for (var i = 0; i < items.length; i++) ...[
-                                    if (i > 0) const DashedDivider(),
-                                    ToyRow(
-                                      title: items[i].name.isNotEmpty ? items[i].name : items[i].category,
-                                      meta: items[i].category,
-                                      amountText: fmt(items[i].amount),
-                                      onTap: () => context.push('/edit-fixed-expense/${items[i].id}'),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
+            child: items.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: ToyMetrics.screenPaddingH),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'No fixed costs yet.\nAdd one with ＋, or bring forward a\nprevious month\'s setup.',
+                            style: ToyTextStyles.body(),
+                            textAlign: TextAlign.center,
                           ),
+                          const SizedBox(height: ToyMetrics.cardGap),
+                          ToyCapsuleButton(
+                            label: '先月からコピー ・ Copy from another month',
+                            onTap: () => context.push('/import-fixed-costs'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : SingleChildScrollView(
+                    // A single scroll view for the whole body, not a
+                    // pinned button above a separately-scrolled list --
+                    // the previous nested-scroll layout left the list
+                    // card's own bottom shadow with no trailing space to
+                    // paint into, so it was clipped by the viewport edge
+                    // at the end of the scroll extent (reported: "the
+                    // display is clipped at the bottom, don't see the
+                    // full shadow"). This layout gives the shadow real
+                    // scroll-content space below the card, the same fix
+                    // already applied to Spend's list/Categories-card gap.
+                    padding: const EdgeInsets.fromLTRB(
+                      ToyMetrics.screenPaddingH,
+                      12,
+                      ToyMetrics.screenPaddingH,
+                      ToyMetrics.listBottomPadding,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ToyCard(
+                          padding: EdgeInsets.zero,
+                          child: Column(
+                            children: [
+                              for (var i = 0; i < items.length; i++) ...[
+                                if (i > 0) const DashedDivider(),
+                                ToyRow(
+                                  title: items[i].name.isNotEmpty ? items[i].name : items[i].category,
+                                  meta: items[i].category,
+                                  amountText: fmt(items[i].amount),
+                                  onTap: () => context.push('/edit-fixed-expense/${items[i].id}'),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: ToyMetrics.cardGap),
+                        ToyLinkRow(
+                          label: 'Copy from another month',
+                          onTap: () => context.push('/import-fixed-costs'),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ),
           ),
         );
       },
