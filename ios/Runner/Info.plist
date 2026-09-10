@@ -49,5 +49,9 @@
 	<false/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Kakeibo needs access to your photo library to save or share backup files.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Kakeibo does not use the camera. This permission is declared only because a bundled library links camera APIs.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Kakeibo does not use your location. This permission is declared only because a bundled library links location APIs.</string>
 </dict>
 </plist>
