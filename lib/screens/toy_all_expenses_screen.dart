@@ -179,9 +179,16 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
                           availableBudgetText: fmt(availableBudget),
                         )
                       : SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(
+                          padding: EdgeInsets.fromLTRB(
                             ToyMetrics.screenPaddingH,
-                            0,
+                            // Without this gap the list's own card sits
+                            // flush against the Categories card above it,
+                            // so that card's drop shadow has no room to
+                            // render and gets visually swallowed by the
+                            // list card's opaque background scrolling up
+                            // against it -- reported as "the capsule
+                            // overlaps the entries" / no shading visible.
+                            showCategorySummary ? ToyMetrics.cardGap : 0,
                             ToyMetrics.screenPaddingH,
                             ToyMetrics.listBottomPadding,
                           ),
