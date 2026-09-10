@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kakeibo/models/kakeibo_month.dart';
+import 'package:kakeibo/providers/database_provider.dart';
 import 'package:kakeibo/providers/kakeibo_provider.dart';
 import 'package:kakeibo/providers/settings_provider.dart';
 import 'package:kakeibo/models/import_type.dart';
@@ -252,15 +253,34 @@ class _ToyImportScreenState extends ConsumerState<ToyImportScreen> {
                 onTap: selectedItems.isEmpty || selectedMonth == null
                     ? null
                     : () async {
-                        // Re-read the destination fresh at submit time,
-                        // not the build-time snapshot -- if an earlier
-                        // copy from this same screen (or elsewhere) landed
-                        // while this screen was open, a row that looked
-                        // fine when the screen first built could be a
-                        // duplicate by the time Copy is actually pressed.
-                        final freshMonths = ref.read(kakeiboMonthsProvider).valueOrNull;
-                        final freshDestination =
-                            freshMonths?.where((m) => m.id == currentMonthId).firstOrNull;
+                        // Re-read the destination from the database itself
+                        // at submit time, not the build-time provider
+                        // snapshot: ref.read(kakeiboMonthsProvider) only
+                        // returns whatever Riverpod already has cached --
+                        // during a seamless refresh that can still be the
+                        // exact stale value we're trying not to trust, so
+                        // it does not actually guarantee freshness. An
+                        // earlier copy made from this same open screen (or
+                        // elsewhere) must still be caught here even though
+                        // it wouldn't force this provider to re-fetch.
+                        final KakeiboMonth? freshDestination;
+                        try {
+                          freshDestination =
+                              await ref.read(databaseProvider).getMonth(currentMonthId);
+                        } catch (_) {
+                          // Fail closed: if we can't confirm the current
+                          // state, don't risk a silent duplicate copy.
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Could not verify existing entries. Try again.'),
+                              ),
+                            );
+                          }
+                          return;
+                        }
+                        if (!context.mounted) return;
+
                         final freshDuplicateIds = freshDestination == null
                             ? const <String>{}
                             : isFixedCosts
