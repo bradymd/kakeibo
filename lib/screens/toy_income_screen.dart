@@ -8,6 +8,7 @@ import 'package:kakeibo/providers/settings_provider.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
 import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/services/payday_calculator.dart';
+import 'package:kakeibo/services/swipe_nav.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 
@@ -51,70 +52,78 @@ class ToyIncomeScreen extends ConsumerWidget {
           tab: ToyTabDestination.income,
           trailing: const ToyMenuButton(),
           floatingActionButton: ToyFab(onTap: () => context.push('/add-income')),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-              ToyMetrics.screenPaddingH,
-              12,
-              ToyMetrics.screenPaddingH,
-              ToyMetrics.listBottomPadding,
+          body: GestureDetector(
+            onHorizontalDragEnd: (details) => SwipeNav.handleTabSwipe(
+              context,
+              ToyTabDestination.income,
+              details.primaryVelocity ?? 0,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ToyCapsuleButton(
-                  label: '先月からコピー ・ Import last month',
-                  onTap: () => context.push('/import-income'),
-                ),
-                const SizedBox(height: ToyMetrics.cardGap),
-                if (sources.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Center(
-                      child: Text('No income sources yet. Tap the button below to add one!', style: ToyTextStyles.body(), textAlign: TextAlign.center),
-                    ),
-                  )
-                else
-                  ToyCard(
-                    child: Column(
-                      children: [
-                        for (var i = 0; i < sources.length; i++) ...[
-                          if (i > 0) const SizedBox(height: 14),
-                          _SourceRow(
-                            name: sources[i].name,
-                            amountText: fmt(sources[i].amount),
-                            ratio: totalIncome > 0 ? (sources[i].amount / totalIncome).clamp(0.0, 1.0) : 0.0,
-                            sharePercent: totalIncome > 0 ? ((sources[i].amount / totalIncome) * 100).round() : 0,
-                            paydayText: payday != null ? 'paid ${DateFormat('d MMM').format(payday)}' : null,
-                            onTap: () => context.push('/edit-income/${sources[i].id}'),
-                          ),
-                        ],
-                      ],
-                    ),
+            behavior: HitTestBehavior.translucent,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(
+                ToyMetrics.screenPaddingH,
+                12,
+                ToyMetrics.screenPaddingH,
+                ToyMetrics.listBottomPadding,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ToyCapsuleButton(
+                    label: '先月からコピー ・ Import last month',
+                    onTap: () => context.push('/import-income'),
                   ),
-                const SizedBox(height: 12),
-                Text(
-                  'Income feeds "Money to budget" on Start of Month.',
-                  style: ToyTextStyles.label(fontSize: 11, color: ToyColors.muted2),
-                  textAlign: TextAlign.center,
-                ),
-                if (paydayPreset == PaydayPreset.none) ...[
                   const SizedBox(height: ToyMetrics.cardGap),
-                  GestureDetector(
-                    onTap: () => context.push('/payday-settings'),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: ToyColors.amberBg,
-                        borderRadius: BorderRadius.circular(ToyMetrics.tileRadius),
+                  if (sources.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Text('No income sources yet. Tap the button below to add one!', style: ToyTextStyles.body(), textAlign: TextAlign.center),
                       ),
-                      child: Text(
-                        'If you have a regular and significant source of income you can define a payday.',
-                        style: ToyTextStyles.label(fontSize: 11.5, color: ToyColors.amberInk),
+                    )
+                  else
+                    ToyCard(
+                      child: Column(
+                        children: [
+                          for (var i = 0; i < sources.length; i++) ...[
+                            if (i > 0) const SizedBox(height: 14),
+                            _SourceRow(
+                              name: sources[i].name,
+                              amountText: fmt(sources[i].amount),
+                              ratio: totalIncome > 0 ? (sources[i].amount / totalIncome).clamp(0.0, 1.0) : 0.0,
+                              sharePercent: totalIncome > 0 ? ((sources[i].amount / totalIncome) * 100).round() : 0,
+                              paydayText: payday != null ? 'paid ${DateFormat('d MMM').format(payday)}' : null,
+                              onTap: () => context.push('/edit-income/${sources[i].id}'),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Income feeds "Money to budget" on Start of Month.',
+                    style: ToyTextStyles.label(fontSize: 11, color: ToyColors.muted2),
+                    textAlign: TextAlign.center,
                   ),
+                  if (paydayPreset == PaydayPreset.none) ...[
+                    const SizedBox(height: ToyMetrics.cardGap),
+                    GestureDetector(
+                      onTap: () => context.push('/payday-settings'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: ToyColors.amberBg,
+                          borderRadius: BorderRadius.circular(ToyMetrics.tileRadius),
+                        ),
+                        child: Text(
+                          'If you have a regular and significant source of income you can define a payday.',
+                          style: ToyTextStyles.label(fontSize: 11.5, color: ToyColors.amberInk),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );

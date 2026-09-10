@@ -6,6 +6,7 @@ import 'package:kakeibo/providers/month_calculations_provider.dart';
 import 'package:kakeibo/providers/settings_provider.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
 import 'package:kakeibo/services/month_helpers.dart';
+import 'package:kakeibo/services/swipe_nav.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 
@@ -45,49 +46,57 @@ class ToyFixedExpensesScreen extends ConsumerWidget {
           tab: ToyTabDestination.fixed,
           trailing: const ToyMenuButton(),
           floatingActionButton: ToyFab(onTap: () => context.push('/add-fixed-expense')),
-          body: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              ToyMetrics.screenPaddingH,
-              12,
-              ToyMetrics.screenPaddingH,
-              ToyMetrics.listBottomPadding,
+          body: GestureDetector(
+            onHorizontalDragEnd: (details) => SwipeNav.handleTabSwipe(
+              context,
+              ToyTabDestination.fixed,
+              details.primaryVelocity ?? 0,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ToyCapsuleButton(
-                  label: '先月からコピー ・ Import last month',
-                  onTap: () => context.push('/import-fixed-costs'),
-                ),
-                const SizedBox(height: ToyMetrics.cardGap),
-                Expanded(
-                  child: items.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No fixed costs yet. Tap ＋ to add one!',
-                            style: ToyTextStyles.body(),
-                          ),
-                        )
-                      : SingleChildScrollView(
-                          child: ToyCard(
-                            padding: EdgeInsets.zero,
-                            child: Column(
-                              children: [
-                                for (var i = 0; i < items.length; i++) ...[
-                                  if (i > 0) const DashedDivider(),
-                                  ToyRow(
-                                    title: items[i].name.isNotEmpty ? items[i].name : items[i].category,
-                                    meta: items[i].category,
-                                    amountText: fmt(items[i].amount),
-                                    onTap: () => context.push('/edit-fixed-expense/${items[i].id}'),
-                                  ),
+            behavior: HitTestBehavior.translucent,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                ToyMetrics.screenPaddingH,
+                12,
+                ToyMetrics.screenPaddingH,
+                ToyMetrics.listBottomPadding,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ToyCapsuleButton(
+                    label: '先月からコピー ・ Import last month',
+                    onTap: () => context.push('/import-fixed-costs'),
+                  ),
+                  const SizedBox(height: ToyMetrics.cardGap),
+                  Expanded(
+                    child: items.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No fixed costs yet. Tap ＋ to add one!',
+                              style: ToyTextStyles.body(),
+                            ),
+                          )
+                        : SingleChildScrollView(
+                            child: ToyCard(
+                              padding: EdgeInsets.zero,
+                              child: Column(
+                                children: [
+                                  for (var i = 0; i < items.length; i++) ...[
+                                    if (i > 0) const DashedDivider(),
+                                    ToyRow(
+                                      title: items[i].name.isNotEmpty ? items[i].name : items[i].category,
+                                      meta: items[i].category,
+                                      amountText: fmt(items[i].amount),
+                                      onTap: () => context.push('/edit-fixed-expense/${items[i].id}'),
+                                    ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           ),
-                        ),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         );

@@ -84,14 +84,11 @@ class ToyHomeScreen extends ConsumerWidget {
       floatingActionButton:
           isSetup ? ToyFab(onTap: () => context.push('/add-expense')) : null,
       body: GestureDetector(
-        onHorizontalDragEnd: (details) {
-          final velocity = details.primaryVelocity ?? 0;
-          if (velocity > 300) {
-            SwipeNav.go(context, '/expenses', SlideDirection.left);
-          } else if (velocity < -300) {
-            SwipeNav.go(context, '/fixed-expenses', SlideDirection.right);
-          }
-        },
+        onHorizontalDragEnd: (details) => SwipeNav.handleTabSwipe(
+          context,
+          ToyTabDestination.month,
+          details.primaryVelocity ?? 0,
+        ),
         behavior: HitTestBehavior.translucent,
         child: monthAsync.when(
           loading: () => const Center(

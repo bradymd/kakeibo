@@ -114,19 +114,16 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
 
         return ToyScaffold(
           title: '支出 Spent',
-          subtitle: displayMonth,
+          subtitle: '$displayMonth ・ ${expenses.length} ${expenses.length == 1 ? 'entry' : 'entries'}',
           tab: ToyTabDestination.spend,
           trailing: const ToyMenuButton(),
           floatingActionButton: ToyFab(onTap: () => context.push('/add-expense')),
           body: GestureDetector(
-            onHorizontalDragEnd: (details) {
-              final velocity = details.primaryVelocity ?? 0;
-              if (velocity > 300) {
-                SwipeNav.go(context, '/', SlideDirection.right);
-              } else if (velocity < -300) {
-                SwipeNav.go(context, '/fixed-expenses', SlideDirection.left);
-              }
-            },
+            onHorizontalDragEnd: (details) => SwipeNav.handleTabSwipe(
+              context,
+              ToyTabDestination.spend,
+              details.primaryVelocity ?? 0,
+            ),
             behavior: HitTestBehavior.translucent,
             child: Column(
               children: [
