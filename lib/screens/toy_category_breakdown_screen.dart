@@ -56,7 +56,7 @@ class ToyCategoryBreakdownScreen extends ConsumerWidget {
         ];
 
         return ToyScaffold(
-          title: 'カテゴリー内訳 Category breakdown',
+          title: 'カテゴリー Categories',
           showBackButton: true,
           body: month.expenses.isEmpty
               ? Center(
