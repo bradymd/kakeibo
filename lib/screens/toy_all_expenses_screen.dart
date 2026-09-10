@@ -11,7 +11,6 @@ import 'package:kakeibo/services/expense_category_stats.dart';
 import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/services/swipe_nav.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';
-import 'package:kakeibo/widgets/toy/toy_category_summary_card.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 
 /// The gachapon-redesign Spend screen (README §3a).
@@ -93,18 +92,15 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
           expenses = expenses.where((e) => e.pillar == _filterPillar).toList();
         }
 
-        // Snapshot for the summary card/threshold check -- taken before the
-        // category filter below so the card's "N of M categorised" always
-        // reflects the pillar-filtered set, not a further-narrowed one.
+        // Snapshot taken before the category filter below, so the
+        // Categories link row shows whenever the pillar-filtered set has
+        // anything in it, not a further-narrowed (category-filtered) one.
         final categoryEligible = expenses;
 
         final filterCategory = _filterCategory;
         if (filterCategory != null) {
           expenses = expenses.where(filterCategory.matches).toList();
         }
-
-        final showCategorySummary = _filterCategory == null &&
-            ExpenseCategoryStats.meetsSummaryThreshold(categoryEligible);
 
         // Running total for whatever's currently shown -- respects the
         // pillar/category filter the same way the entry count already does,
@@ -162,22 +158,6 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
                       ),
                     ),
                   ),
-                if (showCategorySummary)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      ToyMetrics.screenPaddingH,
-                      10,
-                      ToyMetrics.screenPaddingH,
-                      0,
-                    ),
-                    child: ToyCategorySummaryCard(
-                      stats: ExpenseCategoryStats.aggregate(categoryEligible),
-                      categorisedCount: ExpenseCategoryStats.categorisedCount(categoryEligible),
-                      totalCount: categoryEligible.length,
-                      formatAmount: fmt,
-                      onTap: () => context.push('/category-breakdown'),
-                    ),
-                  ),
                 Expanded(
                   child: expenses.isEmpty
                       ? _EmptyState(
@@ -185,60 +165,77 @@ class _ToyAllExpensesScreenState extends ConsumerState<ToyAllExpensesScreen> {
                           availableBudgetText: fmt(availableBudget),
                         )
                       : SingleChildScrollView(
-                          padding: EdgeInsets.fromLTRB(
+                          padding: const EdgeInsets.fromLTRB(
                             ToyMetrics.screenPaddingH,
-                            // Without this gap the list's own card sits
-                            // flush against the Categories card above it,
-                            // so that card's drop shadow has no room to
-                            // render and gets visually swallowed by the
-                            // list card's opaque background scrolling up
-                            // against it -- reported as "the capsule
-                            // overlaps the entries" / no shading visible.
-                            showCategorySummary ? ToyMetrics.cardGap : 0,
+                            0,
                             ToyMetrics.screenPaddingH,
                             ToyMetrics.listBottomPadding,
                           ),
-                          child: ToyCard(
-                            padding: EdgeInsets.zero,
-                            child: Column(
-                              children: [
-                                for (var i = 0; i < expenses.length; i++) ...[
-                                  if (i > 0) const DashedDivider(),
-                                  Dismissible(
-                                    key: Key(expenses[i].id),
-                                    direction: DismissDirection.endToStart,
-                                    background: Container(
-                                      alignment: Alignment.centerRight,
-                                      padding: const EdgeInsets.only(right: 20),
-                                      color: ToyColors.danger,
-                                      child: const Icon(Icons.delete_rounded, color: Colors.white),
-                                    ),
-                                    confirmDismiss: (_) => _confirmDelete(context, expenses[i].description),
-                                    onDismissed: (_) => _deleteExpense(expenses[i].id),
-                                    child: ToyRow(
-                                      title: expenses[i].description,
-                                      meta:
-                                          '${expenses[i].pillar.label} ${expenses[i].pillar.japanese} ・ ${DateFormat('d MMM').format(DateTime.parse(expenses[i].date))}'
-                                          '${expenses[i].category.isEmpty ? '' : ' ・ ${expenses[i].category}'}',
-                                      amountText: fmt(expenses[i].amount),
-                                      leading: ToyPillarDot(color: expenses[i].pillar.toyFill),
-                                      onTap: () => context.push('/edit-expense/${expenses[i].id}'),
-                                    ),
-                                  ),
-                                ],
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Quiet contextual link, not a chart -- the
+                              // full Categories summary card now lives on
+                              // Home instead (per Codex's design review):
+                              // the daily transaction list should get the
+                              // top of this screen, not compete with a
+                              // dashboard-style insight for it. Shown
+                              // whenever the month has any expenses at all
+                              // (not gated by the summary-card threshold --
+                              // a navigation affordance shouldn't
+                              // disappear based on a statistical
+                              // threshold).
+                              if (categoryEligible.isNotEmpty)
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  child: Text(
-                                    '← swipe a row to delete',
-                                    style: ToyTextStyles.label(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: ToyColors.placeholder,
-                                    ),
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: _CategoriesLinkRow(
+                                    onTap: () => context.push('/category-breakdown'),
                                   ),
                                 ),
-                              ],
-                            ),
+                              ToyCard(
+                                padding: EdgeInsets.zero,
+                                child: Column(
+                                  children: [
+                                    for (var i = 0; i < expenses.length; i++) ...[
+                                      if (i > 0) const DashedDivider(),
+                                      Dismissible(
+                                        key: Key(expenses[i].id),
+                                        direction: DismissDirection.endToStart,
+                                        background: Container(
+                                          alignment: Alignment.centerRight,
+                                          padding: const EdgeInsets.only(right: 20),
+                                          color: ToyColors.danger,
+                                          child: const Icon(Icons.delete_rounded, color: Colors.white),
+                                        ),
+                                        confirmDismiss: (_) =>
+                                            _confirmDelete(context, expenses[i].description),
+                                        onDismissed: (_) => _deleteExpense(expenses[i].id),
+                                        child: ToyRow(
+                                          title: expenses[i].description,
+                                          meta:
+                                              '${expenses[i].pillar.label} ${expenses[i].pillar.japanese} ・ ${DateFormat('d MMM').format(DateTime.parse(expenses[i].date))}'
+                                              '${expenses[i].category.isEmpty ? '' : ' ・ ${expenses[i].category}'}',
+                                          amountText: fmt(expenses[i].amount),
+                                          leading: ToyPillarDot(color: expenses[i].pillar.toyFill),
+                                          onTap: () => context.push('/edit-expense/${expenses[i].id}'),
+                                        ),
+                                      ),
+                                    ],
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      child: Text(
+                                        '← swipe a row to delete',
+                                        style: ToyTextStyles.label(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: ToyColors.placeholder,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                 ),
@@ -330,6 +327,54 @@ class _AppliedFilterPill extends StatelessWidget {
             ),
             const SizedBox(width: 4),
             const Icon(Icons.close_rounded, size: 15, color: ToyColors.brand),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A quiet, one-line contextual link above the transaction list, replacing
+/// the full Categories summary card that previously lived on this screen
+/// (moved to Home -- see toy_home_screen.dart). Deliberately not a
+/// capsule/pill: sitting in the pillar filter row would read as a sixth
+/// pillar/filter, which is exactly the crowding this row is meant to
+/// avoid. Per Codex's design recommendation, this stays visible whenever
+/// the month has any expenses -- a navigation affordance shouldn't
+/// disappear based on a statistical threshold the way the old card did.
+class _CategoriesLinkRow extends StatelessWidget {
+  const _CategoriesLinkRow({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Recent spending',
+              style: ToyTextStyles.label(fontSize: 12, color: ToyColors.muted2),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Categories',
+                  style: ToyTextStyles.label(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: ToyColors.brand,
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, size: 16, color: ToyColors.brand),
+              ],
+            ),
           ],
         ),
       ),

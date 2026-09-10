@@ -9,10 +9,12 @@ import 'package:kakeibo/providers/month_calculations_provider.dart';
 import 'package:kakeibo/providers/payday_provider.dart';
 import 'package:kakeibo/providers/settings_provider.dart';
 import 'package:kakeibo/services/currency_formatter.dart';
+import 'package:kakeibo/services/expense_category_stats.dart';
 import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/services/swipe_nav.dart';
 import 'package:kakeibo/theme/toy/toy_theme.dart';
 import 'package:kakeibo/widgets/toy/toy_budget_bar.dart';
+import 'package:kakeibo/widgets/toy/toy_category_summary_card.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 
 /// The gachapon-redesign dashboard (README §2b). New screen, not yet
@@ -134,6 +136,14 @@ class ToyHomeScreen extends ConsumerWidget {
                 idealPillarBudget > 0 ? wantsSpent - idealPillarBudget : 0.0;
             final showWolfStrip = !isOverBudget && wantsOverPace > 0;
 
+            // Categories summary card, moved here from Spend per Codex's
+            // design recommendation: monthly at-a-glance interpretation
+            // belongs on the dashboard, not competing with the daily
+            // transaction-list workflow. Always the whole month (never
+            // pillar-filtered -- there's no pillar filter on this screen).
+            final showCategorySummary =
+                ExpenseCategoryStats.meetsSummaryThreshold(currentMonth.expenses);
+
             return RefreshIndicator(
               color: ToyColors.brand,
               onRefresh: () async => ref.invalidate(kakeiboMonthsProvider),
@@ -173,6 +183,17 @@ class ToyHomeScreen extends ConsumerWidget {
                   ] else if (showWolfStrip) ...[
                     const SizedBox(height: ToyMetrics.cardGap),
                     _WolfStrip(overAmount: fmt(wantsOverPace)),
+                  ],
+                  if (showCategorySummary) ...[
+                    const SizedBox(height: ToyMetrics.cardGap),
+                    ToyCategorySummaryCard(
+                      stats: ExpenseCategoryStats.aggregate(currentMonth.expenses),
+                      categorisedCount:
+                          ExpenseCategoryStats.categorisedCount(currentMonth.expenses),
+                      totalCount: currentMonth.expenses.length,
+                      formatAmount: fmt,
+                      onTap: () => context.push('/category-breakdown'),
+                    ),
                   ],
                   const SizedBox(height: ToyMetrics.cardGap),
                   _RecentExpensesCard(
