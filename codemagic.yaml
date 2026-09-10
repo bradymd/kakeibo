@@ -69,7 +69,13 @@ workflows:
       - build/app/outputs/bundle/release/*.aab
       - build/app/outputs/flutter-apk/*.apk
       - build/debug-info/**
-    publishing:
-      google_play:
-        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        track: internal
+    # Google Play auto-publish is disabled for now: past Android releases
+    # (build 15, build 20) were uploaded to Play Console manually, so this
+    # publishing step has never actually been exercised/verified -- the
+    # first Android build from this pipeline builds artifacts only, for a
+    # manual upload, same as before. Uncomment once a manual upload has
+    # confirmed the AAB/APK are sound.
+    # publishing:
+    #   google_play:
+    #     credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+    #     track: internal
