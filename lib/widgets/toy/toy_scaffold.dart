@@ -84,17 +84,24 @@ class ToyScaffold extends StatelessWidget {
             fillColor: headerColor,
           ),
           Expanded(child: body),
-          if (tab != null)
-            ToyTabBar(
-              current: tab!,
-              disabled: disabledTabs,
-            ),
         ],
       ),
+      // The tab bar lives in Scaffold's own bottomNavigationBar slot, not
+      // inside body's Column, specifically so Scaffold can measure it and
+      // set contentBottom correctly (see ToyTabBar's own doc comment for
+      // why -- this was a real bug on a physical Android phone, where the
+      // OS's own nav bar was drawn on top of untappable tab pills because
+      // nothing here ever accounted for the device's actual bottom safe-
+      // area inset). Per Codex's review: this also means the FAB no longer
+      // needs a bespoke FloatingActionButtonLocation guessing the tab
+      // bar's height -- Flutter's standard `endFloat` already positions
+      // relative to Scaffold's measured contentBottom, which now correctly
+      // reflects the tab bar's real, safe-area-aware height.
+      bottomNavigationBar: tab == null
+          ? null
+          : ToyTabBar(current: tab!, disabled: disabledTabs),
       floatingActionButton: floatingActionButton,
-      floatingActionButtonLocation: tab != null
-          ? const _AboveTabBarFabLocation()
-          : FloatingActionButtonLocation.endFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
@@ -201,26 +208,5 @@ class _Header extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-/// Positions the FAB at `right: 18, bottom: 70` measured from the top
-/// of the tab bar, per the README ("Global chrome"). Flutter's FAB
-/// locations are relative to the Scaffold, not the bottom bar directly,
-/// so this offsets from the standard end-float position by the tab
-/// bar's approximate height (the 24px bottom padding plus the pill).
-class _AboveTabBarFabLocation extends FloatingActionButtonLocation {
-  const _AboveTabBarFabLocation();
-
-  @override
-  Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {
-    final fabX = scaffoldGeometry.scaffoldSize.width -
-        scaffoldGeometry.floatingActionButtonSize.width -
-        18;
-    final fabY = scaffoldGeometry.scaffoldSize.height -
-        scaffoldGeometry.floatingActionButtonSize.height -
-        70 -
-        scaffoldGeometry.minInsets.bottom;
-    return Offset(fabX, fabY);
   }
 }

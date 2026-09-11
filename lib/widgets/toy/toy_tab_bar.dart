@@ -27,6 +27,37 @@ enum ToyTabDestination {
 /// White bar, shadow `0 -3px 0 #F3B9CD`, padding `12 18 24`. Active
 /// pill: `#C22B60` fill, white text, shadow `0 4px 0 #B32A5C`. Inactive:
 /// `#FFEAF1` fill, `#8A5B6B` text, shadow `0 4px 0 #F3D3DE`.
+///
+/// Used as [ToyScaffold]'s `bottomNavigationBar`, not a plain child inside
+/// its body -- that's what lets Scaffold measure this bar and set
+/// `ScaffoldPrelayoutGeometry.contentBottom` correctly, which the FAB
+/// (positioned via the standard `endFloat`) relies on. Confirmed against
+/// Flutter's own Scaffold/SafeArea source, not assumed: this used to be a
+/// plain child in a Column with a hardcoded bottom-24 padding, which left
+/// a real Android phone's own 3-button navigation bar drawn directly on
+/// top of the tab pills (untappable) since the device's actual bottom
+/// safe-area inset was never consulted at all.
+///
+/// The bottom 24 is the *minimum* visual breathing room, not something to
+/// stack on top of the device inset -- `SafeArea.minimum` takes
+/// `max(24, device inset)` rather than `24 + device inset`, so a tall
+/// gesture-nav inset doesn't make the bar look emptily over-tall, and a
+/// device with no inset at all still gets the original 24px look.
+///
+/// Each pill is given an explicit 44px height (see the `SizedBox` around
+/// `_TabPill` below) rather than being left to size itself naturally.
+/// This isn't cosmetic: Scaffold gives `bottomNavigationBar` a *finite*
+/// loose vertical constraint (the Scaffold's own height), which the Row
+/// passes down to its Expanded children -- so `_TabPill`'s Container,
+/// which has a non-null `alignment`, would otherwise expand to fill that
+/// entire bounded height (confirmed by Codex: this genuinely happened,
+/// each pill rendered ~564px tall and covered the whole screen, silently
+/// swallowing every touch meant for the body underneath, including the
+/// swipe-to-delete Dismissible on the Spend screen -- a real regression
+/// caught by test/toy_all_expenses_dismiss_test.dart). In the old
+/// body-Column placement this same Container had an *unbounded* height to
+/// shrink-wrap against, so the bug never showed there. 44px also slightly
+/// improves the old ~39px pill's touch target.
 class ToyTabBar extends StatelessWidget {
   const ToyTabBar({
     super.key,
@@ -44,27 +75,36 @@ class ToyTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
       decoration: const BoxDecoration(
         color: ToyColors.card,
         boxShadow: [
           BoxShadow(color: ToyColors.cardShadow, blurRadius: 0, offset: Offset(0, -3)),
         ],
       ),
-      child: Row(
-        children: [
-          for (var i = 0; i < ToyTabDestination.values.length; i++) ...[
-            if (i > 0) const SizedBox(width: ToyMetrics.pillGap),
-            Expanded(
-              child: _TabPill(
-                destination: ToyTabDestination.values[i],
-                active: ToyTabDestination.values[i] == current,
-                enabled: !disabled.contains(ToyTabDestination.values[i]),
-                path: ToyTabDestination.values[i].path,
-              ),
-            ),
-          ],
-        ],
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.only(bottom: 24),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+          child: Row(
+            children: [
+              for (var i = 0; i < ToyTabDestination.values.length; i++) ...[
+                if (i > 0) const SizedBox(width: ToyMetrics.pillGap),
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: _TabPill(
+                      destination: ToyTabDestination.values[i],
+                      active: ToyTabDestination.values[i] == current,
+                      enabled: !disabled.contains(ToyTabDestination.values[i]),
+                      path: ToyTabDestination.values[i].path,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
