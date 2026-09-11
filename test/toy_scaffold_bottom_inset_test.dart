@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 
 /// Regression test for the bottom-safe-area bug found on a real Android
@@ -99,6 +100,57 @@ void main() {
         expect(tester.getSize(finder).height, lessThan(30),
             reason: '${dest.label} label must be a normal text line');
       }
+    });
+
+    testWidgets(
+        'with a large device inset (48), tapping an inactive pill actually '
+        'navigates -- proves the real hit target, not just its geometry',
+        (tester) async {
+      // Per Codex's review of 955f39e: the geometry assertions above prove
+      // the bar/pills are bounded and on-screen, but the reported production
+      // symptom was specifically "tabs are untappable" -- a real tap needs a
+      // GoRouter ancestor (the pill's onTap calls context.go), which the
+      // bare-MaterialApp harness above deliberately doesn't set up, so this
+      // test builds one directly instead.
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(padding: EdgeInsets.only(bottom: 48)),
+          child: MaterialApp.router(
+            routerConfig: GoRouter(
+              initialLocation: '/',
+              routes: [
+                GoRoute(
+                  path: '/',
+                  builder: (context, state) => ToyScaffold(
+                    title: 'Month',
+                    tab: ToyTabDestination.month,
+                    floatingActionButton: ToyFab(onTap: () {}),
+                    body: const SizedBox.shrink(),
+                  ),
+                ),
+                GoRoute(
+                  path: '/expenses',
+                  builder: (context, state) => ToyScaffold(
+                    title: 'Spent',
+                    tab: ToyTabDestination.spend,
+                    floatingActionButton: ToyFab(onTap: () {}),
+                    body: const Text('Spend screen reached'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Spent'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Spend screen reached'), findsOneWidget,
+          reason: 'tapping the Spent pill must actually route to /expenses, '
+              'proving the pill is a real, reachable tap target -- not just '
+              'correctly sized/positioned geometry');
     });
 
     testWidgets('the FAB sits above the tab bar, fully on-screen, not overlapping it',
