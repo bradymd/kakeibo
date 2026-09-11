@@ -78,7 +78,10 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/income',
-      builder: (context, state) => const ToyIncomeScreen(),
+      pageBuilder: (context, state) => SwipeNav.slidePage(
+        state: state,
+        child: const ToyIncomeScreen(),
+      ),
     ),
     GoRoute(
       path: '/add-expense',
