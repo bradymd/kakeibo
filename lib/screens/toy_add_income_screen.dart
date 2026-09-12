@@ -38,6 +38,20 @@ class _ToyAddIncomeScreenState extends ConsumerState<ToyAddIncomeScreen> {
       if (_amountController.text.isNotEmpty) _amountTouched = true;
       setState(() {});
     });
+    // _canSave also depends on _nameController's text (a non-empty name
+    // is required to save), but nothing was rebuilding this screen when
+    // only the name field changed -- so if the amount was already valid
+    // when the user finished typing the name last, the Save button's
+    // onTap (gated on _canSave) silently stayed stuck at whatever it was
+    // evaluated to on the last amount-triggered rebuild: visually
+    // disabled/faded and completely unresponsive to taps, even though
+    // both fields were actually filled in correctly. Real bug reported
+    // live: "I put in the money and fill in the description. It won't
+    // action" -- the button never got a chance to notice the name field
+    // was now valid.
+    _nameController.addListener(() {
+      setState(() {});
+    });
   }
 
   void _populateFromSource(IncomeSource source) {
