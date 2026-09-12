@@ -109,11 +109,12 @@ class _ToyReflectionScreenState extends ConsumerState<ToyReflectionScreen> {
           final spareAmount = metGoal ? remaining : 0.0;
 
           return ListView(
+            // No FAB on this pushed screen; use standard content padding.
             padding: const EdgeInsets.fromLTRB(
               ToyMetrics.screenPaddingH,
               16,
               ToyMetrics.screenPaddingH,
-              ToyMetrics.listBottomPadding,
+              24,
             ),
             children: [
               _VerdictCard(

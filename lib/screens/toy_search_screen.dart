@@ -195,11 +195,12 @@ class _ToySearchScreenState extends ConsumerState<ToySearchScreen> {
     final sortedMonths = monthIds.toList()..sort((a, b) => b.compareTo(a));
 
     return ListView(
+      // No FAB on this pushed screen; use standard content padding.
       padding: const EdgeInsets.fromLTRB(
         ToyMetrics.screenPaddingH,
         0,
         ToyMetrics.screenPaddingH,
-        ToyMetrics.listBottomPadding,
+        24,
       ),
       children: [
         for (final monthId in sortedMonths) ...[
