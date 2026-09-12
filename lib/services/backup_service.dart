@@ -57,21 +57,61 @@ class BackupService {
     return zipPath;
   }
 
+  /// Guards against two concurrent auto-backup runs. main.dart's cold-start
+  /// call and AutoBackupManager's own init()/resume-triggered call could
+  /// previously both fire close together and race each other writing the
+  /// same _autoBackupFileName -- whichever write "won" was undefined, and
+  /// a torn/interleaved write was possible. A second call while one is
+  /// already running now awaits the in-flight one instead of racing it.
+  static Future<void>? _autoBackupInFlight;
+
   /// Creates/overwrites the rolling auto-backup ZIP in app docs directory.
   /// Skips silently if no database exists yet.
-  static Future<void> createAutoBackup() async {
+  static Future<void> createAutoBackup() {
+    return _autoBackupInFlight ??= _createAutoBackupUnguarded().whenComplete(() {
+      _autoBackupInFlight = null;
+    });
+  }
+
+  static Future<void> _createAutoBackupUnguarded() async {
     final dbPath = await _dbPath();
     final dbFile = File(dbPath);
     if (!await dbFile.exists()) return;
 
-    final bytes = await dbFile.readAsBytes();
-    final archive = Archive();
-    archive.addFile(ArchiveFile(_dbFileName, bytes.length, bytes));
-    final encoded = ZipEncoder().encode(archive);
+    // Read a SQLite-consistent snapshot via VACUUM INTO rather than copying
+    // the live file's raw bytes: the live database stays open (Drift's own
+    // NativeDatabase connection) the whole time this runs, so a plain
+    // readAsBytes() could race an in-flight write and capture a torn/
+    // inconsistent file, especially in WAL mode where the main .sqlite file
+    // doesn't always hold the latest committed data on its own. VACUUM INTO
+    // is SQLite's own atomic, transactionally-consistent snapshot mechanism
+    // and doesn't require closing or locking out the live connection --
+    // unlike manual backup's approach, which does close the live db first.
+    final tempDir = await getTemporaryDirectory();
+    final snapshotPath = p.join(
+      tempDir.path,
+      'kakeibo_autobackup_snapshot_${DateTime.now().microsecondsSinceEpoch}.sqlite',
+    );
+    final snapshotFile = File(snapshotPath);
+    try {
+      final db = sqlite3.sqlite3.open(dbPath, mode: sqlite3.OpenMode.readOnly);
+      try {
+        db.execute("VACUUM INTO '${snapshotPath.replaceAll("'", "''")}'");
+      } finally {
+        db.dispose();
+      }
 
-    final dir = await getApplicationDocumentsDirectory();
-    final zipPath = p.join(dir.path, _autoBackupFileName);
-    await File(zipPath).writeAsBytes(encoded);
+      final bytes = await snapshotFile.readAsBytes();
+      final archive = Archive();
+      archive.addFile(ArchiveFile(_dbFileName, bytes.length, bytes));
+      final encoded = ZipEncoder().encode(archive);
+
+      final dir = await getApplicationDocumentsDirectory();
+      final zipPath = p.join(dir.path, _autoBackupFileName);
+      await File(zipPath).writeAsBytes(encoded);
+    } finally {
+      if (await snapshotFile.exists()) await snapshotFile.delete();
+    }
   }
 
   /// Returns info about the auto-backup file, or null if none exists.

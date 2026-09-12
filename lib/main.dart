@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kakeibo/app.dart';
 import 'package:kakeibo/database/database_provider.dart';
 import 'package:kakeibo/providers/kakeibo_provider.dart';
-import 'package:kakeibo/services/backup_service.dart';
 import 'package:kakeibo/services/month_helpers.dart';
 import 'package:kakeibo/services/payday_calculator.dart';
 
@@ -42,8 +41,15 @@ void main() async {
 
   final initialMonth = await _resolveInitialMonth();
 
-  // Fire-and-forget auto-backup on cold start
-  BackupService.createAutoBackup().catchError((_) {});
+  // Auto-backup is triggered solely by AutoBackupManager (see app.dart),
+  // which is interval-gated (once per 24h) and also runs on app resume.
+  // This used to also fire an unconditional, ungated backup here on every
+  // cold start -- when that landed close to AutoBackupManager's own
+  // init()-triggered run, both wrote the same auto-backup file
+  // concurrently with no coordination between them. BackupService now
+  // serializes concurrent calls internally, but there's no reason to
+  // trigger two separate backup attempts per cold start in the first
+  // place, so this call was removed rather than just made safe to race.
 
   runApp(
     ProviderScope(
