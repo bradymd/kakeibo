@@ -38,12 +38,6 @@ enum ToyTabDestination {
 /// top of the tab pills (untappable) since the device's actual bottom
 /// safe-area inset was never consulted at all.
 ///
-/// The bottom 24 is the *minimum* visual breathing room, not something to
-/// stack on top of the device inset -- `SafeArea.minimum` takes
-/// `max(24, device inset)` rather than `24 + device inset`, so a tall
-/// gesture-nav inset doesn't make the bar look emptily over-tall, and a
-/// device with no inset at all still gets the original 24px look.
-///
 /// Each pill is given an explicit 44px height (see the `SizedBox` around
 /// `_TabPill` below) rather than being left to size itself naturally.
 /// This isn't cosmetic: Scaffold gives `bottomNavigationBar` a *finite*

@@ -12,8 +12,10 @@ import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 /// Fixed by moving ToyTabBar into Scaffold.bottomNavigationBar (so Scaffold
 /// can measure it and position the FAB off Scaffold's own contentBottom via
 /// the standard endFloat location) and having ToyTabBar's own SafeArea use
-/// `minimum: EdgeInsets.only(bottom: 24)` -- max(24, device inset), not
-/// 24-plus-inset.
+/// a minimum bottom inset rather than adding to it -- max(minimum, device
+/// inset), not minimum-plus-inset. (First stage used a flat 24px minimum;
+/// see the third fix below for why that became an 8px allowance + 16px
+/// SafeArea minimum instead.)
 ///
 /// This file's first version had assertions weak enough to pass against a
 /// second, independent bug the bottomNavigationBar move introduced: Codex
