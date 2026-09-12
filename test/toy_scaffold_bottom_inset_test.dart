@@ -29,6 +29,19 @@ import 'package:kakeibo/widgets/toy/toy_widgets.dart';
 /// caught it. Fixed by giving each pill an explicit 44px height (SizedBox
 /// around _TabPill). These tests now assert a *bounded* bar/pill height and
 /// that the FAB is actually on-screen, not just "above" an off-screen bar.
+///
+/// A third, related bug surfaced after both of the above were fixed and
+/// shipped: on a real phone, every pill's bottom edge still looked
+/// "sliced off by a few pixels," uniformly. Root cause (Codex): the
+/// pill's rest-state shadow legally paints ~4px below its own 44px layout
+/// box (Flutter does not clip this), and with the original flat 24px
+/// bottom allowance, the pill's layout box ended exactly at the safe
+/// boundary on an inset device -- so those last ~4 painted pixels fell
+/// inside the OS's own system-navigation region. Fixed by splitting the
+/// 24px into an 8px inner "paint allowance" plus a 16px SafeArea minimum
+/// (same 24px total on a zero-inset device; a visible 4px gap after the
+/// shadow on an inset device, not just zero clipping). See the
+/// "painted shadow overhang" test below for the deterministic guard.
 void main() {
   Future<void> pumpScaffold(WidgetTester tester, {required double bottomInset}) async {
     await tester.pumpWidget(
@@ -54,13 +67,15 @@ void main() {
       await pumpScaffold(tester, bottomInset: 0);
 
       // Bounded height, not "somewhere on screen" -- 12 top padding + 44
-      // pill + 24 bottom minimum = 80, loosely bounded rather than pinned
-      // to an exact pixel count (shadows/borders could nudge it slightly).
-      // This is the exact assertion the original (weaker) version of this
-      // test lacked: a full-screen ~600px-tall bar also satisfies "label
-      // dy < viewport height" and "bar bottom touches viewport bottom",
-      // which is why it slipped through undetected until Codex measured
-      // the actual rendered rectangles and found each pill was ~564px tall.
+      // pill + 8 paint allowance + 16 SafeArea minimum = 80 (same total as
+      // the original flat 24, just split -- see the pill-overhang test
+      // below for why), loosely bounded rather than pinned to an exact
+      // pixel count (shadows/borders could nudge it slightly). This is the
+      // exact assertion the original (weaker) version of this test lacked:
+      // a full-screen ~600px-tall bar also satisfies "label dy < viewport
+      // height" and "bar bottom touches viewport bottom", which is why it
+      // slipped through undetected until Codex measured the actual
+      // rendered rectangles and found each pill was ~564px tall.
       final tabBarHeight = tester.getSize(find.byType(ToyTabBar)).height;
       expect(tabBarHeight, closeTo(80, 4));
 
@@ -83,16 +98,16 @@ void main() {
         'individually on-screen and tappable', (tester) async {
       await pumpScaffold(tester, bottomInset: 48);
 
-      // Bar grows by the extra inset (24 minimum -> 48 actual), not to
-      // fill the viewport: 12 + 44 + 48 = 104.
+      // Bar grows by the extra inset (16 minimum -> 48 actual), not to
+      // fill the viewport: 12 + 44 + 8 + 48 = 112.
       final tabBarHeight = tester.getSize(find.byType(ToyTabBar)).height;
-      expect(tabBarHeight, closeTo(104, 4));
+      expect(tabBarHeight, closeTo(112, 4));
 
       final viewportHeight = tester.view.physicalSize.height / tester.view.devicePixelRatio;
       final tabBarTop = tester.getTopLeft(find.byType(ToyTabBar)).dy;
       expect(tabBarTop, greaterThan(0),
           reason: 'the bar must not cover the whole screen from y=0');
-      expect(tabBarTop, closeTo(viewportHeight - 104, 4));
+      expect(tabBarTop, closeTo(viewportHeight - 112, 4));
 
       for (final dest in ToyTabDestination.values) {
         final finder = find.text(dest.label);
@@ -177,10 +192,11 @@ void main() {
       await pumpScaffold(tester, bottomInset: 34);
 
       final tabBarHeight = tester.getSize(find.byType(ToyTabBar)).height;
-      // 12 top + 44 pill + max(24, 34) bottom = 90, loosely bounded on
-      // both sides so this can't silently regress back to full-screen.
+      // 12 top + 44 pill + 8 allowance + max(16, 34) bottom = 98, loosely
+      // bounded on both sides so this can't silently regress back to
+      // full-screen.
       expect(tabBarHeight, greaterThanOrEqualTo(24 + 12));
-      expect(tabBarHeight, closeTo(90, 4));
+      expect(tabBarHeight, closeTo(98, 4));
     });
 
     testWidgets('each tab pill has a bounded, sane height (guards against the '
@@ -195,6 +211,47 @@ void main() {
         matching: find.byType(SizedBox),
       );
       expect(tester.getSize(pillFinder.first).height, closeTo(44, 1));
+    });
+
+    testWidgets(
+        "a pill's painted shadow overhang stays inside the safe boundary "
+        '(guards against the OS system-nav bar slicing off the last few '
+        'painted pixels of every button)', (tester) async {
+      // Real bug found on a physical Android phone, after both prior
+      // fixes in this file: the tab bar was correctly bounded and every
+      // pill correctly 44px tall, but every pill's bottom edge still
+      // looked "sliced off by a few pixels" -- uniformly, on all four
+      // buttons. Root cause (Codex): _TabPill's ToyPressable-driven
+      // BoxShadow paints at Offset(0, offset), and offset is 4 at rest,
+      // 1 when pressed but the pill has translated down by 3 -- so the
+      // lowest painted pixel is always ~4px below the pill's own 44px
+      // layout box. Flutter does not clip this (SizedBox/Row/
+      // RenderDecoratedBox all impose no clip here), so it's legal
+      // overpaint, not a Flutter bug -- but with the old flat 24px
+      // bottom padding, the pill's layout box ended exactly at the safe
+      // boundary on an inset device, so those last ~4 painted pixels
+      // fell inside the OS's own system-navigation region, where the
+      // real device could obscure/tint them.
+      //
+      // A widget test cannot reproduce an OEM nav-bar scrim -- the
+      // deterministic, testable claim is purely geometric: the pill's
+      // *painted* bottom (layout bottom + the known overhang), not just
+      // its layout bottom, must stay at or above the safe boundary.
+      const bottomInset = 48.0;
+      const paintedOverhang = 4.0; // see ToyPressable/_TabPill: rest shadow offset.
+      await pumpScaffold(tester, bottomInset: bottomInset);
+
+      final viewportHeight = tester.view.physicalSize.height / tester.view.devicePixelRatio;
+      final safeBoundary = viewportHeight - bottomInset;
+      final pillRect = tester.getRect(find.ancestor(
+        of: find.text('Month'),
+        matching: find.byType(SizedBox),
+      ).first);
+
+      expect(pillRect.bottom + paintedOverhang, lessThanOrEqualTo(safeBoundary),
+          reason: "a pill's painted shadow (layout bottom + ${paintedOverhang}px "
+              'overhang) must not cross into the device safe-area inset, or a '
+              'real phone\'s system-navigation region can visibly clip it');
     });
   });
 

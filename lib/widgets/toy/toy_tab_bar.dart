@@ -58,6 +58,25 @@ enum ToyTabDestination {
 /// body-Column placement this same Container had an *unbounded* height to
 /// shrink-wrap against, so the bug never showed there. 44px also slightly
 /// improves the old ~39px pill's touch target.
+///
+/// [_pillPaintAllowance] (8px) reserves room *after* the 44px pill layout
+/// box but *before* SafeArea's own inset, for paint that legally extends
+/// past that box: _TabPill's ToyPressable-driven shadow paints at
+/// `Offset(0, offset)` where offset is 4 at rest, 1 when pressed but the
+/// pill itself has translated down by 3 -- so the lowest painted pixel is
+/// always ~4px below the pill's own layout bounds (confirmed against
+/// Flutter's SDK source by Codex: SizedBox/Row/RenderDecoratedBox impose
+/// no clip here, so this is legal, un-clipped overpaint, not a bug in
+/// Flutter). Without this allowance, the pill's layout box ends exactly
+/// at the safe boundary on a device whose inset exceeds the old 24px
+/// minimum, so those last ~4 painted pixels of every pill's shadow (and,
+/// mid-press, up to 3px of the pill's translated fill) fall inside the
+/// Android system-navigation region -- read on a real 3-button-nav phone
+/// as "every button's bottom edge is uniformly sliced off by a few
+/// pixels." Splitting the old flat 24px into 8 (inner allowance) + 16
+/// (SafeArea minimum) keeps the same 24px total on a zero/small-inset
+/// device, while on an inset-dominated device it leaves a visible 4px of
+/// white breathing room after the shadow, not just zero clipping.
 class ToyTabBar extends StatelessWidget {
   const ToyTabBar({
     super.key,
@@ -72,6 +91,10 @@ class ToyTabBar extends StatelessWidget {
   /// up, Spend and Income are disabled).
   final Set<ToyTabDestination> disabled;
 
+  /// Room reserved after the pill's 44px layout box for its own paint
+  /// overhang (the rest-state shadow) -- see the class doc comment.
+  static const double _pillPaintAllowance = 8;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -83,9 +106,9 @@ class ToyTabBar extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        minimum: const EdgeInsets.only(bottom: 24),
+        minimum: const EdgeInsets.only(bottom: 16),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, _pillPaintAllowance),
           child: Row(
             children: [
               for (var i = 0; i < ToyTabDestination.values.length; i++) ...[
