@@ -83,7 +83,40 @@ class ToyScaffold extends StatelessWidget {
             trailing: trailing,
             fillColor: headerColor,
           ),
-          Expanded(child: body),
+          Expanded(
+            // Tab-bar screens (bottomNavigationBar above) already get a
+            // safe-area-aware bottom inset from ToyTabBar itself. Pushed
+            // screens (tab == null -- Settings, About, Setup, Reflection,
+            // etc.) have nothing in their bottomNavigationBar slot at all,
+            // so without this SafeArea their body content ran straight to
+            // the device's physical bottom edge with whatever fixed
+            // padding each screen happened to hardcode (typically 24) --
+            // on a phone with a tall transparent system nav bar, the last
+            // line of content sits uncomfortably close to (reported: not
+            // fully hidden, but tight against) that bar.
+            //
+            // SafeArea reserves the reported device inset outside the
+            // child. Each screen's existing bottom padding remains inside
+            // the safe viewport, intentionally preserving its visual
+            // breathing room above system UI -- confirmed against
+            // Flutter's own SafeArea source (it wraps the child in
+            // Padding(bottom: max(MediaQuery.padding.bottom, minimum))
+            // and never inspects the child), so this is genuinely
+            // additive with a screen's own bottom padding, not a
+            // replacement for it. Per Codex's audit of all thirteen
+            // unique tabless screens: their bodies are scrollable,
+            // flexible, or centered, with no body-level MediaQuery inset
+            // reads or nested SafeAreas that would make this unsafe.
+            //
+            // left/right explicitly false (rather than relying on
+            // SafeArea's left/right defaulting true) to keep this a
+            // narrowly-scoped bottom-only fix -- tabbed bodies don't get
+            // a horizontal wrapper here, so this shouldn't introduce a
+            // surprise horizontal narrowing in landscape either.
+            child: tab == null
+                ? SafeArea(left: false, top: false, right: false, child: body)
+                : body,
+          ),
         ],
       ),
       // The tab bar lives in Scaffold's own bottomNavigationBar slot, not

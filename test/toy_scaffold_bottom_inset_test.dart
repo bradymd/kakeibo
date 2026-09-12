@@ -197,4 +197,88 @@ void main() {
       expect(tester.getSize(pillFinder.first).height, closeTo(44, 1));
     });
   });
+
+  /// Regression test for a second, related on-device report: pushed screens
+  /// (tab: null -- Settings, About, Start of Month, etc.) have nothing in
+  /// ToyScaffold's bottomNavigationBar slot, so before this fix their body
+  /// content ran straight to the device's physical bottom edge with
+  /// whatever fixed padding each screen author happened to hardcode
+  /// (typically 24). On the app owner's phone, this meant the last line of
+  /// Settings/About sat uncomfortably close to (not fully hidden by, but
+  /// tight against) the transparent system nav bar.
+  ///
+  /// Fixed by wrapping body in SafeArea(left: false, top: false, right:
+  /// false) when tab == null. Per Codex's review: SafeArea's device inset
+  /// and a screen's own bottom padding are additive (SafeArea wraps the
+  /// child in Padding(bottom: max(device inset, minimum)) and never
+  /// inspects the child) -- this is the correct, desired behaviour here:
+  /// system clearance *plus* the screen's own deliberate visual breathing
+  /// room, not a replacement for it.
+  group('ToyScaffold tabless (tab: null) bottom safe-area handling', () {
+    testWidgets(
+        'a fixed bottom-aligned child ends exactly at the safe boundary '
+        '(viewport height minus the device inset)', (tester) async {
+      const bottomInset = 48.0;
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(padding: EdgeInsets.only(bottom: bottomInset)),
+          child: MaterialApp(
+            home: ToyScaffold(
+              title: 'Test',
+              // tab: null (the default) -- a pushed screen.
+              body: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: const [Text('Bottom-aligned content', key: Key('fixedBottomChild'))],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final viewportHeight = tester.view.physicalSize.height / tester.view.devicePixelRatio;
+      final childBottom = tester.getBottomLeft(find.byKey(const Key('fixedBottomChild'))).dy;
+      expect(childBottom, closeTo(viewportHeight - bottomInset, 0.5),
+          reason: 'a fixed bottom child must end at the device safe boundary, '
+              'not run to the physical screen edge');
+    });
+
+    testWidgets(
+        'a scrollable with its own bottom padding retains BOTH the device '
+        'inset AND that padding (additive, not a replacement)', (tester) async {
+      const bottomInset = 48.0;
+      const listBottomPadding = 24.0;
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(padding: EdgeInsets.only(bottom: bottomInset)),
+          child: MaterialApp(
+            home: ToyScaffold(
+              title: 'Test',
+              body: ListView(
+                padding: const EdgeInsets.only(bottom: listBottomPadding),
+                children: const [
+                  SizedBox(height: 2000, child: Text('filler')), // force scrollability
+                  Text('Last line', key: Key('lastListItem')),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Scroll fully to the bottom -- this is what "the last line is
+      // visible/hidden" actually depends on, not just static layout.
+      await tester.drag(find.byType(ListView), const Offset(0, -3000));
+      await tester.pumpAndSettle();
+
+      final viewportHeight = tester.view.physicalSize.height / tester.view.devicePixelRatio;
+      final lastItemBottom = tester.getBottomLeft(find.byKey(const Key('lastListItem'))).dy;
+      // Per Codex: last ListView child with bottom:24 ends at
+      // viewportHeight - inset - padding, i.e. both apply, not just one.
+      expect(lastItemBottom, closeTo(viewportHeight - bottomInset - listBottomPadding, 1),
+          reason: 'the device inset and the ListView\'s own bottom padding '
+              'must both apply -- the inset must not silently replace or '
+              'absorb the screen\'s own deliberate spacing');
+    });
+  });
 }
