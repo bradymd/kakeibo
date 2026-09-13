@@ -5,6 +5,22 @@ import 'package:kakeibo/theme/toy/toy_theme.dart';
 /// used across the redesign (Save expense, Start the month, Complete
 /// Reflection, etc). README §4a: radius 20, padding `15 0`, `#FFD24C`,
 /// shadow `0 6px 0 #D9A400`, label 16/900 `#7A5600`.
+///
+/// Disabled state is intentionally flat, not a dimmer version of the
+/// raised enabled look: reported live on both Android and iOS as "the
+/// shadow being lighter and above the button" -- the previous
+/// implementation alpha-blended both the fill and shadow colours
+/// independently (0.5 and 0.4) straight over whatever was behind the
+/// button, so the apparent face/shadow relationship varied with the
+/// background and compressed badly (measured: a 47-unit luminance gap
+/// enabled shrank to 15.4 disabled), reading as backwards/muddy rather
+/// than merely dimmer. Per Codex's review: a disabled control shouldn't
+/// retain the toy button's pressable/elevated affordance at all --
+/// opaque `ToyColors.goldBg2` face, no shadow, `ToyColors.muted` label.
+/// That pair has ~5.1:1 contrast and looks deliberate regardless of the
+/// surrounding screen colour, and the flat-to-raised transition on
+/// becoming valid communicates "now actionable" more clearly than a
+/// dimmer-but-still-raised look would.
 class ToyPrimaryButton extends StatelessWidget {
   const ToyPrimaryButton({
     super.key,
@@ -35,17 +51,18 @@ class ToyPrimaryButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 15),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isEnabled ? fillColor : fillColor.withValues(alpha: 0.5),
+          color: isEnabled ? fillColor : ToyColors.goldBg2,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: ToyShadows.primary(
-            color: isEnabled ? shadowColor : shadowColor.withValues(alpha: 0.4),
-            offset: offset,
-          ),
+          boxShadow: isEnabled
+              ? ToyShadows.primary(color: shadowColor, offset: offset)
+              : null,
         ),
         child: Text(
           label,
-          style: ToyTextStyles.rowAmount(fontSize: 16, color: textColor)
-              .copyWith(fontWeight: FontWeight.w900),
+          style: ToyTextStyles.rowAmount(
+            fontSize: 16,
+            color: isEnabled ? textColor : ToyColors.muted,
+          ).copyWith(fontWeight: FontWeight.w900),
         ),
       ),
     );
