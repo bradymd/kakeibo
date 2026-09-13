@@ -84,15 +84,33 @@ class BackupService {
     // readAsBytes() could race an in-flight write and capture a torn/
     // inconsistent file, especially in WAL mode where the main .sqlite file
     // doesn't always hold the latest committed data on its own. VACUUM INTO
-    // is SQLite's own atomic, transactionally-consistent snapshot mechanism
-    // and doesn't require closing or locking out the live connection --
-    // unlike manual backup's approach, which does close the live db first.
+    // is SQLite's own documented mechanism for copying a *live* database --
+    // it does not mutate the source and produces a transactionally
+    // consistent snapshot -- and doesn't require closing or locking out the
+    // live connection, unlike manual backup's approach, which does close
+    // the live db first. (Confirmed against SQLite's own docs, not assumed:
+    // https://www.sqlite.org/lang_vacuum.html#vacuum_with_an_into_clause,
+    // https://www.sqlite.org/isolation.html#isolation_between_database_connections)
     final tempDir = await getTemporaryDirectory();
     final snapshotPath = p.join(
       tempDir.path,
       'kakeibo_autobackup_snapshot_${DateTime.now().microsecondsSinceEpoch}.sqlite',
     );
     final snapshotFile = File(snapshotPath);
+    // The final zip is published via a sibling temp file in the SAME app
+    // documents directory, then renamed over the real path, rather than
+    // writeAsBytes()'d directly onto the existing kakeibo_autobackup.zip.
+    // writeAsBytes() on an existing path truncates it before writing the
+    // new content -- an app termination, power loss, or I/O failure during
+    // that write would destroy the previous good rolling backup and leave
+    // a partial/corrupt zip behind, with nothing to fall back on. The
+    // VACUUM INTO snapshot above is consistent, but that only protects the
+    // *database read*; it says nothing about this final publish step.
+    // Keeping the temp file in the same directory (not getTemporaryDirectory(),
+    // which may be a different filesystem) means File.rename can be the
+    // actual atomic replacement boundary, and its own contract removes an
+    // existing destination file first: https://api.flutter.dev/flutter/dart-io/File/rename.html
+    String? pendingZipPath;
     try {
       final db = sqlite3.sqlite3.open(dbPath, mode: sqlite3.OpenMode.readOnly);
       try {
@@ -108,9 +126,24 @@ class BackupService {
 
       final dir = await getApplicationDocumentsDirectory();
       final zipPath = p.join(dir.path, _autoBackupFileName);
-      await File(zipPath).writeAsBytes(encoded);
+      pendingZipPath = p.join(
+        dir.path,
+        '.kakeibo_autobackup_pending_${DateTime.now().microsecondsSinceEpoch}.zip',
+      );
+      final pendingFile = await File(pendingZipPath).open(mode: FileMode.write);
+      try {
+        await pendingFile.writeFrom(encoded);
+        await pendingFile.flush();
+      } finally {
+        await pendingFile.close();
+      }
+      await File(pendingZipPath).rename(zipPath);
+      pendingZipPath = null; // renamed away; nothing left to clean up
     } finally {
       if (await snapshotFile.exists()) await snapshotFile.delete();
+      if (pendingZipPath != null && await File(pendingZipPath).exists()) {
+        await File(pendingZipPath).delete();
+      }
     }
   }
 

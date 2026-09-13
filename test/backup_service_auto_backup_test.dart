@@ -121,51 +121,40 @@ void main() {
   });
 
   test(
-      'two concurrent createAutoBackup() calls perform exactly ONE real '
-      'backup run, not two racing ones', () async {
+      'two concurrent calls share the same in-flight backup', () async {
     createLiveDatabase('concurrent-marker');
-
-    // Watch the temp dir for the snapshot files createAutoBackup()
-    // creates internally (kakeibo_autobackup_snapshot_*.sqlite) -- this is
-    // the actual decisive, behavior-distinguishing assertion. The old,
-    // unguarded implementation didn't create a temp snapshot file at all
-    // (it read the live file's bytes directly), so this test would have
-    // been meaningless against it; the new implementation's whole point is
-    // that two overlapping calls should trigger exactly one VACUUM INTO
-    // snapshot, not one per call. Without the in-flight guard, firing two
-    // calls without awaiting either first would create two independent
-    // snapshot files (and, on some platforms/timings, race writing the
-    // same final zip path).
-    final snapshotCreations = <String>[];
-    final watchSub = tempDir.watch(events: FileSystemEvent.create).listen((e) {
-      // VACUUM INTO creates a `-journal` sidecar alongside the real
-      // snapshot file -- filter it out, or a single genuine snapshot run
-      // looks like two file-creation events.
-      if (e.path.contains('kakeibo_autobackup_snapshot_') &&
-          !e.path.endsWith('-journal')) {
-        snapshotCreations.add(e.path);
-      }
-    });
 
     // Fire both without awaiting either first -- this is exactly the
     // shape of the original bug (main.dart's call and
     // AutoBackupManager's call landing close together).
     final first = BackupService.createAutoBackup();
     final second = BackupService.createAutoBackup();
+
+    // This is the actual decisive, behavior-distinguishing assertion --
+    // NOT a filesystem-watcher-based one. An earlier version of this test
+    // watched the temp dir for VACUUM INTO's snapshot-file creation event
+    // instead, but Directory.watch() delivery timing is platform-
+    // dependent (observed passing locally on Linux/inotify, then failing
+    // on Codemagic's macOS runner with zero events seen at all -- likely
+    // FSEvents batching/delivering the notification later than this
+    // test's brief wait, compounded by the snapshot file already being
+    // deleted in createAutoBackup()'s own `finally` block by the time the
+    // watcher got around to firing). identical() on the returned Futures
+    // is synchronous, platform-independent, and deterministically proves
+    // that a second overlapping public call receives the same in-flight
+    // Future rather than invoking the unguarded operation again -- it does
+    // not, by itself, prove anything about how many internal VACUUM INTO
+    // runs happened (that's an implementation detail this test no longer
+    // observes directly; per Codex's review, adding a seam purely to
+    // count private calls would be more complexity than this code
+    // warrants). The subsequent valid-zip/content assertion below proves
+    // that shared operation actually completed successfully.
     expect(identical(first, second), isTrue,
         reason: 'a second call while one is already in flight must return '
             'the SAME future as the first, proving it is sharing that run '
             'rather than starting an independent one');
 
     await Future.wait([first, second]);
-    // Let the filesystem watcher's queued events flush.
-    await Future<void>.delayed(const Duration(milliseconds: 50));
-    await watchSub.cancel();
-
-    expect(snapshotCreations.length, 1,
-        reason: 'two overlapping createAutoBackup() calls must perform '
-            'exactly one real backup run (one VACUUM INTO snapshot), not '
-            'one per call. Saw: $snapshotCreations');
 
     // The resulting file must be a single, well-formed zip with the
     // correct content -- not a torn/interleaved write from two
@@ -199,5 +188,43 @@ void main() {
 
     final zipPath = '${appDocsDir.path}/kakeibo_autobackup.zip';
     expect(File(zipPath).existsSync(), isFalse);
+  });
+
+  test(
+      'an existing known-good rolling zip is replaced by a valid new one on '
+      'success, with no leftover pending temp file', () async {
+    // Per Codex's review: createAutoBackup() publishes the final zip via a
+    // sibling temp file in the same app documents directory, then renames
+    // it over kakeibo_autobackup.zip, rather than writeAsBytes()-ing
+    // directly onto the existing path (which truncates it before writing
+    // the replacement -- an interruption partway through that would
+    // destroy the previous good backup and leave a partial/corrupt zip
+    // with nothing to fall back on).
+    createLiveDatabase('old-good-backup');
+    await BackupService.createAutoBackup();
+    final firstRow = readAutoBackupZipDbRow();
+    expect(firstRow['id'], 'old-good-backup');
+
+    final dbPath = '${appDocsDir.path}/kakeibo.sqlite';
+    final db = sqlite3.sqlite3.open(dbPath);
+    db.execute("UPDATE kakeibo_months SET id = 'new-good-backup' WHERE id = 'old-good-backup'");
+    db.dispose();
+
+    await BackupService.createAutoBackup();
+
+    // The rolling zip now reflects the new content, not the old one.
+    final secondRow = readAutoBackupZipDbRow();
+    expect(secondRow['id'], 'new-good-backup');
+
+    // No pending-publish temp file was left behind in app docs -- the
+    // rename either replaced it cleanly, or the finally-block cleanup ran.
+    final leftoverPending = appDocsDir
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.contains('kakeibo_autobackup_pending_'))
+        .toList();
+    expect(leftoverPending, isEmpty,
+        reason: 'no .kakeibo_autobackup_pending_*.zip temp file should '
+            'remain after a successful publish');
   });
 }
